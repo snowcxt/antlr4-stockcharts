@@ -6,7 +6,7 @@
   "scripts": {
     "antlr": "java -jar antlr-4.7-complete.jar -visitor -no-listener -Dlanguage=JavaScript lib/Expr.g4 -o lib/parser",
     "editor": "./node_modules/.bin/webpack --watch --config editor/webpack.config.js",
-    "test": "mocha --compilers js:babel-core/register"
+    "test": "npm run antlr && mocha --compilers js:babel-core/register"
   },
   "repository": {
     "type": "git",

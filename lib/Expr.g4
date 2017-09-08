@@ -1,23 +1,22 @@
 grammar Expr;
 prog  
-      : expr
+      : expr '<EOF>'
       ;
 
-expr  
-      : left=expr AND right=expr                   #and
-      | left=expr OR right=expr                    #or
-      | expr ( '<' | '<=' | '>' | '>=' ) expr      #compare
-      | '(' expr ')'                               #paren
-      | ID '(' (expr ( ',' expr )*)? ')'           #func
-      | NEWLINE                                    #blank
+expr
+      : ID '(' exprList? ')'                                #funcEx
+      | left=expr and right=expr                            #andEx
+      | left=expr or right=expr                             #orEx
+      | left=expr ( '<' | '<=' | '>' | '>=' ) right=expr    #compareEx
+      | '(' expr ')'                                        #parenEx
+      | NEWLINE                                             #blankEx
       ;
 
-ID
-      : [a-zA-Z_] [a-zA-Z_0-9]*
-      ;
-AND : A N D;
-OR : O R;
-IS : I S;
+exprList : expr (',' expr)* ;   // arg list
+and : 'and';
+or : 'or';
+
+ID : [a-zA-Z_] [a-zA-Z_0-9]*;
 NEWLINE : '\r'? '\n';
 COMMENT : ( '//' ~[\r\n]* '\r'? '\n' | '/*' .*? '*/') -> skip;
 WS      : [ \t]+ -> skip;
