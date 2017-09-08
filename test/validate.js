@@ -10,8 +10,8 @@ describe("validation", function () {
         assert.deepEqual([], validate('(id() and id2())'), []);
     });
 
-    it('a() and (b() or c())', function () {
-        assert.deepEqual(validate('a() and (b() or c())'), []);
+    it('a() aNd (b() OR c())', function () {
+        assert.deepEqual(validate('a() aNd (b() OR c())'), []);
     });
 
     it("a()) - extraneous input ')'", function () {
