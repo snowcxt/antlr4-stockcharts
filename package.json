@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "antlr": "java -jar antlr-4.7-complete.jar -visitor -no-listener -Dlanguage=JavaScript lib/Expr.g4 -o lib/parser",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha --compilers js:babel-core/register"
   },
   "repository": {
     "type": "git",
@@ -16,5 +16,21 @@
   "bugs": {
     "url": "https://github.com/snowcxt/antlr4-stockcharts/issues"
   },
-  "homepage": "https://github.com/snowcxt/antlr4-stockcharts#readme"
+  "homepage": "https://github.com/snowcxt/antlr4-stockcharts#readme",
+  "dependencies": {
+    "antlr4": "^4.7.0",
+    "brace": "^0.10.0",
+    "lodash": "^4.17.4"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-stage-2": "^6.24.1",
+    "eslint": "^4.6.1",
+    "mocha": "^3.5.0",
+    "nodemon": "^1.11.0",
+    "rimraf": "^2.6.1",
+    "webpack": "^3.5.6"
+  }
 }
