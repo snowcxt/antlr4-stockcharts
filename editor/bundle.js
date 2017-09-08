@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 39);
+/******/ 	return __webpack_require__(__webpack_require__.s = 37);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -1151,231 +1151,6 @@ exports.ParseCancellationException = ParseCancellationException;
 "use strict";
 
 
-/* Copyright (c) 2012-2017 The ANTLR Project. All rights reserved.
- * Use of this file is governed by the BSD 3-clause license that
- * can be found in the LICENSE.txt file in the project root.
- */
-///
-
-// The basic notion of a tree has a parent, a payload, and a list of children.
-//  It is the most abstract interface for all the trees used by ANTLR.
-///
-
-var Token = __webpack_require__(1).Token;
-var Interval = __webpack_require__(2).Interval;
-var INVALID_INTERVAL = new Interval(-1, -2);
-var Utils = __webpack_require__(0);
-
-function Tree() {
-	return this;
-}
-
-function SyntaxTree() {
-	Tree.call(this);
-	return this;
-}
-
-SyntaxTree.prototype = Object.create(Tree.prototype);
-SyntaxTree.prototype.constructor = SyntaxTree;
-
-function ParseTree() {
-	SyntaxTree.call(this);
-	return this;
-}
-
-ParseTree.prototype = Object.create(SyntaxTree.prototype);
-ParseTree.prototype.constructor = ParseTree;
-
-function RuleNode() {
-	ParseTree.call(this);
-	return this;
-}
-
-RuleNode.prototype = Object.create(ParseTree.prototype);
-RuleNode.prototype.constructor = RuleNode;
-
-function TerminalNode() {
-	ParseTree.call(this);
-	return this;
-}
-
-TerminalNode.prototype = Object.create(ParseTree.prototype);
-TerminalNode.prototype.constructor = TerminalNode;
-
-function ErrorNode() {
-	TerminalNode.call(this);
-	return this;
-}
-
-ErrorNode.prototype = Object.create(TerminalNode.prototype);
-ErrorNode.prototype.constructor = ErrorNode;
-
-function ParseTreeVisitor() {
-	return this;
-}
-
-ParseTreeVisitor.prototype.visit = function (ctx) {
-	if (Array.isArray(ctx)) {
-		return ctx.map(function (child) {
-			return child.accept(this);
-		}, this);
-	} else {
-		return ctx.accept(this);
-	}
-};
-
-ParseTreeVisitor.prototype.visitChildren = function (ctx) {
-	return this.visit(ctx.children);
-};
-
-ParseTreeVisitor.prototype.visitTerminal = function (node) {};
-
-ParseTreeVisitor.prototype.visitErrorNode = function (node) {};
-
-function ParseTreeListener() {
-	return this;
-}
-
-ParseTreeListener.prototype.visitTerminal = function (node) {};
-
-ParseTreeListener.prototype.visitErrorNode = function (node) {};
-
-ParseTreeListener.prototype.enterEveryRule = function (node) {};
-
-ParseTreeListener.prototype.exitEveryRule = function (node) {};
-
-function TerminalNodeImpl(symbol) {
-	TerminalNode.call(this);
-	this.parentCtx = null;
-	this.symbol = symbol;
-	return this;
-}
-
-TerminalNodeImpl.prototype = Object.create(TerminalNode.prototype);
-TerminalNodeImpl.prototype.constructor = TerminalNodeImpl;
-
-TerminalNodeImpl.prototype.getChild = function (i) {
-	return null;
-};
-
-TerminalNodeImpl.prototype.getSymbol = function () {
-	return this.symbol;
-};
-
-TerminalNodeImpl.prototype.getParent = function () {
-	return this.parentCtx;
-};
-
-TerminalNodeImpl.prototype.getPayload = function () {
-	return this.symbol;
-};
-
-TerminalNodeImpl.prototype.getSourceInterval = function () {
-	if (this.symbol === null) {
-		return INVALID_INTERVAL;
-	}
-	var tokenIndex = this.symbol.tokenIndex;
-	return new Interval(tokenIndex, tokenIndex);
-};
-
-TerminalNodeImpl.prototype.getChildCount = function () {
-	return 0;
-};
-
-TerminalNodeImpl.prototype.accept = function (visitor) {
-	return visitor.visitTerminal(this);
-};
-
-TerminalNodeImpl.prototype.getText = function () {
-	return this.symbol.text;
-};
-
-TerminalNodeImpl.prototype.toString = function () {
-	if (this.symbol.type === Token.EOF) {
-		return "<EOF>";
-	} else {
-		return this.symbol.text;
-	}
-};
-
-// Represents a token that was consumed during resynchronization
-// rather than during a valid match operation. For example,
-// we will create this kind of a node during single token insertion
-// and deletion as well as during "consume until error recovery set"
-// upon no viable alternative exceptions.
-
-function ErrorNodeImpl(token) {
-	TerminalNodeImpl.call(this, token);
-	return this;
-}
-
-ErrorNodeImpl.prototype = Object.create(TerminalNodeImpl.prototype);
-ErrorNodeImpl.prototype.constructor = ErrorNodeImpl;
-
-ErrorNodeImpl.prototype.isErrorNode = function () {
-	return true;
-};
-
-ErrorNodeImpl.prototype.accept = function (visitor) {
-	return visitor.visitErrorNode(this);
-};
-
-function ParseTreeWalker() {
-	return this;
-}
-
-ParseTreeWalker.prototype.walk = function (listener, t) {
-	var errorNode = t instanceof ErrorNode || t.isErrorNode !== undefined && t.isErrorNode();
-	if (errorNode) {
-		listener.visitErrorNode(t);
-	} else if (t instanceof TerminalNode) {
-		listener.visitTerminal(t);
-	} else {
-		this.enterRule(listener, t);
-		for (var i = 0; i < t.getChildCount(); i++) {
-			var child = t.getChild(i);
-			this.walk(listener, child);
-		}
-		this.exitRule(listener, t);
-	}
-};
-//
-// The discovery of a rule node, involves sending two events: the generic
-// {@link ParseTreeListener//enterEveryRule} and a
-// {@link RuleContext}-specific event. First we trigger the generic and then
-// the rule specific. We to them in reverse order upon finishing the node.
-//
-ParseTreeWalker.prototype.enterRule = function (listener, r) {
-	var ctx = r.getRuleContext();
-	listener.enterEveryRule(ctx);
-	ctx.enterRule(listener);
-};
-
-ParseTreeWalker.prototype.exitRule = function (listener, r) {
-	var ctx = r.getRuleContext();
-	ctx.exitRule(listener);
-	listener.exitEveryRule(ctx);
-};
-
-ParseTreeWalker.DEFAULT = new ParseTreeWalker();
-
-exports.RuleNode = RuleNode;
-exports.ErrorNode = ErrorNode;
-exports.TerminalNode = TerminalNode;
-exports.ErrorNodeImpl = ErrorNodeImpl;
-exports.TerminalNodeImpl = TerminalNodeImpl;
-exports.ParseTreeListener = ParseTreeListener;
-exports.ParseTreeVisitor = ParseTreeVisitor;
-exports.ParseTreeWalker = ParseTreeWalker;
-exports.INVALID_INTERVAL = INVALID_INTERVAL;
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
 //
 /* Copyright (c) 2012-2017 The ANTLR Project. All rights reserved.
  * Use of this file is governed by the BSD 3-clause license that
@@ -1680,6 +1455,231 @@ exports.StarBlockStartState = StarBlockStartState;
 exports.BasicBlockStartState = BasicBlockStartState;
 
 /***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/* Copyright (c) 2012-2017 The ANTLR Project. All rights reserved.
+ * Use of this file is governed by the BSD 3-clause license that
+ * can be found in the LICENSE.txt file in the project root.
+ */
+///
+
+// The basic notion of a tree has a parent, a payload, and a list of children.
+//  It is the most abstract interface for all the trees used by ANTLR.
+///
+
+var Token = __webpack_require__(1).Token;
+var Interval = __webpack_require__(2).Interval;
+var INVALID_INTERVAL = new Interval(-1, -2);
+var Utils = __webpack_require__(0);
+
+function Tree() {
+	return this;
+}
+
+function SyntaxTree() {
+	Tree.call(this);
+	return this;
+}
+
+SyntaxTree.prototype = Object.create(Tree.prototype);
+SyntaxTree.prototype.constructor = SyntaxTree;
+
+function ParseTree() {
+	SyntaxTree.call(this);
+	return this;
+}
+
+ParseTree.prototype = Object.create(SyntaxTree.prototype);
+ParseTree.prototype.constructor = ParseTree;
+
+function RuleNode() {
+	ParseTree.call(this);
+	return this;
+}
+
+RuleNode.prototype = Object.create(ParseTree.prototype);
+RuleNode.prototype.constructor = RuleNode;
+
+function TerminalNode() {
+	ParseTree.call(this);
+	return this;
+}
+
+TerminalNode.prototype = Object.create(ParseTree.prototype);
+TerminalNode.prototype.constructor = TerminalNode;
+
+function ErrorNode() {
+	TerminalNode.call(this);
+	return this;
+}
+
+ErrorNode.prototype = Object.create(TerminalNode.prototype);
+ErrorNode.prototype.constructor = ErrorNode;
+
+function ParseTreeVisitor() {
+	return this;
+}
+
+ParseTreeVisitor.prototype.visit = function (ctx) {
+	if (Array.isArray(ctx)) {
+		return ctx.map(function (child) {
+			return child.accept(this);
+		}, this);
+	} else {
+		return ctx.accept(this);
+	}
+};
+
+ParseTreeVisitor.prototype.visitChildren = function (ctx) {
+	return this.visit(ctx.children);
+};
+
+ParseTreeVisitor.prototype.visitTerminal = function (node) {};
+
+ParseTreeVisitor.prototype.visitErrorNode = function (node) {};
+
+function ParseTreeListener() {
+	return this;
+}
+
+ParseTreeListener.prototype.visitTerminal = function (node) {};
+
+ParseTreeListener.prototype.visitErrorNode = function (node) {};
+
+ParseTreeListener.prototype.enterEveryRule = function (node) {};
+
+ParseTreeListener.prototype.exitEveryRule = function (node) {};
+
+function TerminalNodeImpl(symbol) {
+	TerminalNode.call(this);
+	this.parentCtx = null;
+	this.symbol = symbol;
+	return this;
+}
+
+TerminalNodeImpl.prototype = Object.create(TerminalNode.prototype);
+TerminalNodeImpl.prototype.constructor = TerminalNodeImpl;
+
+TerminalNodeImpl.prototype.getChild = function (i) {
+	return null;
+};
+
+TerminalNodeImpl.prototype.getSymbol = function () {
+	return this.symbol;
+};
+
+TerminalNodeImpl.prototype.getParent = function () {
+	return this.parentCtx;
+};
+
+TerminalNodeImpl.prototype.getPayload = function () {
+	return this.symbol;
+};
+
+TerminalNodeImpl.prototype.getSourceInterval = function () {
+	if (this.symbol === null) {
+		return INVALID_INTERVAL;
+	}
+	var tokenIndex = this.symbol.tokenIndex;
+	return new Interval(tokenIndex, tokenIndex);
+};
+
+TerminalNodeImpl.prototype.getChildCount = function () {
+	return 0;
+};
+
+TerminalNodeImpl.prototype.accept = function (visitor) {
+	return visitor.visitTerminal(this);
+};
+
+TerminalNodeImpl.prototype.getText = function () {
+	return this.symbol.text;
+};
+
+TerminalNodeImpl.prototype.toString = function () {
+	if (this.symbol.type === Token.EOF) {
+		return "<EOF>";
+	} else {
+		return this.symbol.text;
+	}
+};
+
+// Represents a token that was consumed during resynchronization
+// rather than during a valid match operation. For example,
+// we will create this kind of a node during single token insertion
+// and deletion as well as during "consume until error recovery set"
+// upon no viable alternative exceptions.
+
+function ErrorNodeImpl(token) {
+	TerminalNodeImpl.call(this, token);
+	return this;
+}
+
+ErrorNodeImpl.prototype = Object.create(TerminalNodeImpl.prototype);
+ErrorNodeImpl.prototype.constructor = ErrorNodeImpl;
+
+ErrorNodeImpl.prototype.isErrorNode = function () {
+	return true;
+};
+
+ErrorNodeImpl.prototype.accept = function (visitor) {
+	return visitor.visitErrorNode(this);
+};
+
+function ParseTreeWalker() {
+	return this;
+}
+
+ParseTreeWalker.prototype.walk = function (listener, t) {
+	var errorNode = t instanceof ErrorNode || t.isErrorNode !== undefined && t.isErrorNode();
+	if (errorNode) {
+		listener.visitErrorNode(t);
+	} else if (t instanceof TerminalNode) {
+		listener.visitTerminal(t);
+	} else {
+		this.enterRule(listener, t);
+		for (var i = 0; i < t.getChildCount(); i++) {
+			var child = t.getChild(i);
+			this.walk(listener, child);
+		}
+		this.exitRule(listener, t);
+	}
+};
+//
+// The discovery of a rule node, involves sending two events: the generic
+// {@link ParseTreeListener//enterEveryRule} and a
+// {@link RuleContext}-specific event. First we trigger the generic and then
+// the rule specific. We to them in reverse order upon finishing the node.
+//
+ParseTreeWalker.prototype.enterRule = function (listener, r) {
+	var ctx = r.getRuleContext();
+	listener.enterEveryRule(ctx);
+	ctx.enterRule(listener);
+};
+
+ParseTreeWalker.prototype.exitRule = function (listener, r) {
+	var ctx = r.getRuleContext();
+	ctx.exitRule(listener);
+	listener.exitEveryRule(ctx);
+};
+
+ParseTreeWalker.DEFAULT = new ParseTreeWalker();
+
+exports.RuleNode = RuleNode;
+exports.ErrorNode = ErrorNode;
+exports.TerminalNode = TerminalNode;
+exports.ErrorNodeImpl = ErrorNodeImpl;
+exports.TerminalNodeImpl = TerminalNodeImpl;
+exports.ParseTreeListener = ParseTreeListener;
+exports.ParseTreeVisitor = ParseTreeVisitor;
+exports.ParseTreeWalker = ParseTreeWalker;
+exports.INVALID_INTERVAL = INVALID_INTERVAL;
+
+/***/ }),
 /* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -1693,7 +1693,7 @@ exports.BasicBlockStartState = BasicBlockStartState;
  */
 ///
 
-var RuleContext = __webpack_require__(15).RuleContext;
+var RuleContext = __webpack_require__(16).RuleContext;
 var Hash = __webpack_require__(0).Hash;
 
 function PredictionContext(cachedHashCode) {
@@ -3938,7 +3938,7 @@ exports.InputStream = InputStream;
 
 var Token = __webpack_require__(1).Token;
 var Recognizer = __webpack_require__(28).Recognizer;
-var CommonTokenFactory = __webpack_require__(55).CommonTokenFactory;
+var CommonTokenFactory = __webpack_require__(53).CommonTokenFactory;
 var RecognitionException = __webpack_require__(3).RecognitionException;
 var LexerNoViableAltException = __webpack_require__(3).LexerNoViableAltException;
 
@@ -4298,170 +4298,6 @@ exports.Lexer = Lexer;
 "use strict";
 
 
-/* Copyright (c) 2012-2017 The ANTLR Project. All rights reserved.
- * Use of this file is governed by the BSD 3-clause license that
- * can be found in the LICENSE.txt file in the project root.
- */
-///
-
-//  A rule context is a record of a single rule invocation. It knows
-//  which context invoked it, if any. If there is no parent context, then
-//  naturally the invoking state is not valid.  The parent link
-//  provides a chain upwards from the current rule invocation to the root
-//  of the invocation tree, forming a stack. We actually carry no
-//  information about the rule associated with this context (except
-//  when parsing). We keep only the state number of the invoking state from
-//  the ATN submachine that invoked this. Contrast this with the s
-//  pointer inside ParserRuleContext that tracks the current state
-//  being "executed" for the current rule.
-//
-//  The parent contexts are useful for computing lookahead sets and
-//  getting error information.
-//
-//  These objects are used during parsing and prediction.
-//  For the special case of parsers, we use the subclass
-//  ParserRuleContext.
-//
-//  @see ParserRuleContext
-///
-
-var RuleNode = __webpack_require__(4).RuleNode;
-var INVALID_INTERVAL = __webpack_require__(4).INVALID_INTERVAL;
-var INVALID_ALT_NUMBER = __webpack_require__(8).INVALID_ALT_NUMBER;
-
-function RuleContext(parent, invokingState) {
-	RuleNode.call(this);
-	// What context invoked this rule?
-	this.parentCtx = parent || null;
-	// What state invoked the rule associated with this context?
-	// The "return address" is the followState of invokingState
-	// If parent is null, this should be -1.
-	this.invokingState = invokingState || -1;
-	return this;
-}
-
-RuleContext.prototype = Object.create(RuleNode.prototype);
-RuleContext.prototype.constructor = RuleContext;
-
-RuleContext.prototype.depth = function () {
-	var n = 0;
-	var p = this;
-	while (p !== null) {
-		p = p.parentCtx;
-		n += 1;
-	}
-	return n;
-};
-
-// A context is empty if there is no invoking state; meaning nobody call
-// current context.
-RuleContext.prototype.isEmpty = function () {
-	return this.invokingState === -1;
-};
-
-// satisfy the ParseTree / SyntaxTree interface
-
-RuleContext.prototype.getSourceInterval = function () {
-	return INVALID_INTERVAL;
-};
-
-RuleContext.prototype.getRuleContext = function () {
-	return this;
-};
-
-RuleContext.prototype.getPayload = function () {
-	return this;
-};
-
-// Return the combined text of all child nodes. This method only considers
-// tokens which have been added to the parse tree.
-// <p>
-// Since tokens on hidden channels (e.g. whitespace or comments) are not
-// added to the parse trees, they will not appear in the output of this
-// method.
-// /
-RuleContext.prototype.getText = function () {
-	if (this.getChildCount() === 0) {
-		return "";
-	} else {
-		return this.children.map(function (child) {
-			return child.getText();
-		}).join("");
-	}
-};
-
-// For rule associated with this parse tree internal node, return
-// the outer alternative number used to match the input. Default
-// implementation does not compute nor store this alt num. Create
-// a subclass of ParserRuleContext with backing field and set
-// option contextSuperClass.
-// to set it.
-RuleContext.prototype.getAltNumber = function () {
-	return INVALID_ALT_NUMBER;
-};
-
-// Set the outer alternative number for this context node. Default
-// implementation does nothing to avoid backing field overhead for
-// trees that don't need it.  Create
-// a subclass of ParserRuleContext with backing field and set
-// option contextSuperClass.
-RuleContext.prototype.setAltNumber = function (altNumber) {};
-
-RuleContext.prototype.getChild = function (i) {
-	return null;
-};
-
-RuleContext.prototype.getChildCount = function () {
-	return 0;
-};
-
-RuleContext.prototype.accept = function (visitor) {
-	return visitor.visitChildren(this);
-};
-
-//need to manage circular dependencies, so export now
-exports.RuleContext = RuleContext;
-var Trees = __webpack_require__(30).Trees;
-
-// Print out a whole tree, not just a node, in LISP format
-// (root child1 .. childN). Print just a node if this is a leaf.
-//
-
-RuleContext.prototype.toStringTree = function (ruleNames, recog) {
-	return Trees.toStringTree(this, ruleNames, recog);
-};
-
-RuleContext.prototype.toString = function (ruleNames, stop) {
-	ruleNames = ruleNames || null;
-	stop = stop || null;
-	var p = this;
-	var s = "[";
-	while (p !== null && p !== stop) {
-		if (ruleNames === null) {
-			if (!p.isEmpty()) {
-				s += p.invokingState;
-			}
-		} else {
-			var ri = p.ruleIndex;
-			var ruleName = ri >= 0 && ri < ruleNames.length ? ruleNames[ri] : "" + ri;
-			s += ruleName;
-		}
-		if (p.parentCtx !== null && (ruleNames !== null || !p.parentCtx.isEmpty())) {
-			s += " ";
-		}
-		p = p.parentCtx;
-	}
-	s += "]";
-	return s;
-};
-
-/***/ }),
-/* 16 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
 //
 /* Copyright (c) 2012-2017 The ANTLR Project. All rights reserved.
  * Use of this file is governed by the BSD 3-clause license that
@@ -4477,7 +4313,7 @@ RuleContext.prototype.toString = function (ruleNames, stop) {
 //  an ATN state.
 ///
 
-var DecisionState = __webpack_require__(5).DecisionState;
+var DecisionState = __webpack_require__(4).DecisionState;
 var SemanticContext = __webpack_require__(10).SemanticContext;
 var Hash = __webpack_require__(0).Hash;
 
@@ -4612,7 +4448,7 @@ exports.ATNConfig = ATNConfig;
 exports.LexerATNConfig = LexerATNConfig;
 
 /***/ }),
-/* 17 */
+/* 16 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4622,28 +4458,161 @@ exports.LexerATNConfig = LexerATNConfig;
  * Use of this file is governed by the BSD 3-clause license that
  * can be found in the LICENSE.txt file in the project root.
  */
-exports.atn = __webpack_require__(58);
-exports.codepointat = __webpack_require__(25);
-exports.dfa = __webpack_require__(63);
-exports.fromcodepoint = __webpack_require__(26);
-exports.tree = __webpack_require__(29);
-exports.error = __webpack_require__(65);
-exports.Token = __webpack_require__(1).Token;
-exports.CharStreams = __webpack_require__(67).CharStreams;
-exports.CommonToken = __webpack_require__(1).CommonToken;
-exports.InputStream = __webpack_require__(13).InputStream;
-exports.FileStream = __webpack_require__(68).FileStream;
-exports.CommonTokenStream = __webpack_require__(27).CommonTokenStream;
-exports.Lexer = __webpack_require__(14).Lexer;
-exports.Parser = __webpack_require__(69).Parser;
-var pc = __webpack_require__(6);
-exports.PredictionContextCache = pc.PredictionContextCache;
-exports.ParserRuleContext = __webpack_require__(19).ParserRuleContext;
-exports.Interval = __webpack_require__(2).Interval;
-exports.Utils = __webpack_require__(0);
+///
+
+//  A rule context is a record of a single rule invocation. It knows
+//  which context invoked it, if any. If there is no parent context, then
+//  naturally the invoking state is not valid.  The parent link
+//  provides a chain upwards from the current rule invocation to the root
+//  of the invocation tree, forming a stack. We actually carry no
+//  information about the rule associated with this context (except
+//  when parsing). We keep only the state number of the invoking state from
+//  the ATN submachine that invoked this. Contrast this with the s
+//  pointer inside ParserRuleContext that tracks the current state
+//  being "executed" for the current rule.
+//
+//  The parent contexts are useful for computing lookahead sets and
+//  getting error information.
+//
+//  These objects are used during parsing and prediction.
+//  For the special case of parsers, we use the subclass
+//  ParserRuleContext.
+//
+//  @see ParserRuleContext
+///
+
+var RuleNode = __webpack_require__(5).RuleNode;
+var INVALID_INTERVAL = __webpack_require__(5).INVALID_INTERVAL;
+var INVALID_ALT_NUMBER = __webpack_require__(8).INVALID_ALT_NUMBER;
+
+function RuleContext(parent, invokingState) {
+	RuleNode.call(this);
+	// What context invoked this rule?
+	this.parentCtx = parent || null;
+	// What state invoked the rule associated with this context?
+	// The "return address" is the followState of invokingState
+	// If parent is null, this should be -1.
+	this.invokingState = invokingState || -1;
+	return this;
+}
+
+RuleContext.prototype = Object.create(RuleNode.prototype);
+RuleContext.prototype.constructor = RuleContext;
+
+RuleContext.prototype.depth = function () {
+	var n = 0;
+	var p = this;
+	while (p !== null) {
+		p = p.parentCtx;
+		n += 1;
+	}
+	return n;
+};
+
+// A context is empty if there is no invoking state; meaning nobody call
+// current context.
+RuleContext.prototype.isEmpty = function () {
+	return this.invokingState === -1;
+};
+
+// satisfy the ParseTree / SyntaxTree interface
+
+RuleContext.prototype.getSourceInterval = function () {
+	return INVALID_INTERVAL;
+};
+
+RuleContext.prototype.getRuleContext = function () {
+	return this;
+};
+
+RuleContext.prototype.getPayload = function () {
+	return this;
+};
+
+// Return the combined text of all child nodes. This method only considers
+// tokens which have been added to the parse tree.
+// <p>
+// Since tokens on hidden channels (e.g. whitespace or comments) are not
+// added to the parse trees, they will not appear in the output of this
+// method.
+// /
+RuleContext.prototype.getText = function () {
+	if (this.getChildCount() === 0) {
+		return "";
+	} else {
+		return this.children.map(function (child) {
+			return child.getText();
+		}).join("");
+	}
+};
+
+// For rule associated with this parse tree internal node, return
+// the outer alternative number used to match the input. Default
+// implementation does not compute nor store this alt num. Create
+// a subclass of ParserRuleContext with backing field and set
+// option contextSuperClass.
+// to set it.
+RuleContext.prototype.getAltNumber = function () {
+	return INVALID_ALT_NUMBER;
+};
+
+// Set the outer alternative number for this context node. Default
+// implementation does nothing to avoid backing field overhead for
+// trees that don't need it.  Create
+// a subclass of ParserRuleContext with backing field and set
+// option contextSuperClass.
+RuleContext.prototype.setAltNumber = function (altNumber) {};
+
+RuleContext.prototype.getChild = function (i) {
+	return null;
+};
+
+RuleContext.prototype.getChildCount = function () {
+	return 0;
+};
+
+RuleContext.prototype.accept = function (visitor) {
+	return visitor.visitChildren(this);
+};
+
+//need to manage circular dependencies, so export now
+exports.RuleContext = RuleContext;
+var Trees = __webpack_require__(29).Trees;
+
+// Print out a whole tree, not just a node, in LISP format
+// (root child1 .. childN). Print just a node if this is a leaf.
+//
+
+RuleContext.prototype.toStringTree = function (ruleNames, recog) {
+	return Trees.toStringTree(this, ruleNames, recog);
+};
+
+RuleContext.prototype.toString = function (ruleNames, stop) {
+	ruleNames = ruleNames || null;
+	stop = stop || null;
+	var p = this;
+	var s = "[";
+	while (p !== null && p !== stop) {
+		if (ruleNames === null) {
+			if (!p.isEmpty()) {
+				s += p.invokingState;
+			}
+		} else {
+			var ri = p.ruleIndex;
+			var ruleName = ri >= 0 && ri < ruleNames.length ? ruleNames[ri] : "" + ri;
+			s += ruleName;
+		}
+		if (p.parentCtx !== null && (ruleNames !== null || !p.parentCtx.isEmpty())) {
+			s += " ";
+		}
+		p = p.parentCtx;
+	}
+	s += "]";
+	return s;
+};
 
 /***/ }),
-/* 18 */
+/* 17 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4729,6 +4698,37 @@ exports.DFASerializer = DFASerializer;
 exports.LexerDFASerializer = LexerDFASerializer;
 
 /***/ }),
+/* 18 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/* Copyright (c) 2012-2017 The ANTLR Project. All rights reserved.
+ * Use of this file is governed by the BSD 3-clause license that
+ * can be found in the LICENSE.txt file in the project root.
+ */
+exports.atn = __webpack_require__(55);
+exports.codepointat = __webpack_require__(25);
+exports.dfa = __webpack_require__(61);
+exports.fromcodepoint = __webpack_require__(26);
+exports.tree = __webpack_require__(63);
+exports.error = __webpack_require__(64);
+exports.Token = __webpack_require__(1).Token;
+exports.CharStreams = __webpack_require__(66).CharStreams;
+exports.CommonToken = __webpack_require__(1).CommonToken;
+exports.InputStream = __webpack_require__(13).InputStream;
+exports.FileStream = __webpack_require__(67).FileStream;
+exports.CommonTokenStream = __webpack_require__(27).CommonTokenStream;
+exports.Lexer = __webpack_require__(14).Lexer;
+exports.Parser = __webpack_require__(68).Parser;
+var pc = __webpack_require__(6);
+exports.PredictionContextCache = pc.PredictionContextCache;
+exports.ParserRuleContext = __webpack_require__(19).ParserRuleContext;
+exports.Interval = __webpack_require__(2).Interval;
+exports.Utils = __webpack_require__(0);
+
+/***/ }),
 /* 19 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -4763,8 +4763,8 @@ exports.LexerDFASerializer = LexerDFASerializer;
 //  group values such as this aggregate.  The getters/setters are there to
 //  satisfy the superclass interface.
 
-var RuleContext = __webpack_require__(15).RuleContext;
-var Tree = __webpack_require__(4);
+var RuleContext = __webpack_require__(16).RuleContext;
+var Tree = __webpack_require__(5);
 var INVALID_INTERVAL = Tree.INVALID_INTERVAL;
 var TerminalNode = Tree.TerminalNode;
 var TerminalNodeImpl = Tree.TerminalNodeImpl;
@@ -5047,7 +5047,7 @@ module.exports = isObject;
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-var freeGlobal = __webpack_require__(45);
+var freeGlobal = __webpack_require__(43);
 
 /** Detect free variable `self`. */
 var freeSelf = (typeof self === 'undefined' ? 'undefined' : _typeof(self)) == 'object' && self && self.Object === Object && self;
@@ -5247,7 +5247,7 @@ if (!String.fromCodePoint) {
 ///
 
 var Token = __webpack_require__(1).Token;
-var BufferedTokenStream = __webpack_require__(54).BufferedTokenStream;
+var BufferedTokenStream = __webpack_require__(52).BufferedTokenStream;
 
 function CommonTokenStream(lexer, channel) {
     BufferedTokenStream.call(this, lexer);
@@ -5486,32 +5486,13 @@ exports.Recognizer = Recognizer;
  * can be found in the LICENSE.txt file in the project root.
  */
 
-var Tree = __webpack_require__(4);
-exports.Trees = __webpack_require__(30).Trees;
-exports.RuleNode = Tree.RuleNode;
-exports.ParseTreeListener = Tree.ParseTreeListener;
-exports.ParseTreeVisitor = Tree.ParseTreeVisitor;
-exports.ParseTreeWalker = Tree.ParseTreeWalker;
-
-/***/ }),
-/* 30 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/* Copyright (c) 2012-2017 The ANTLR Project. All rights reserved.
- * Use of this file is governed by the BSD 3-clause license that
- * can be found in the LICENSE.txt file in the project root.
- */
-
 var Utils = __webpack_require__(0);
 var Token = __webpack_require__(1).Token;
-var RuleNode = __webpack_require__(4).RuleNode;
-var ErrorNode = __webpack_require__(4).ErrorNode;
-var TerminalNode = __webpack_require__(4).TerminalNode;
+var RuleNode = __webpack_require__(5).RuleNode;
+var ErrorNode = __webpack_require__(5).ErrorNode;
+var TerminalNode = __webpack_require__(5).TerminalNode;
 var ParserRuleContext = __webpack_require__(19).ParserRuleContext;
-var RuleContext = __webpack_require__(15).RuleContext;
+var RuleContext = __webpack_require__(16).RuleContext;
 var INVALID_ALT_NUMBER = __webpack_require__(8).INVALID_ALT_NUMBER;
 
 /** A set of utility routines useful for all kinds of ANTLR trees. */
@@ -5638,7 +5619,7 @@ Trees.descendants = function (t) {
 exports.Trees = Trees;
 
 /***/ }),
-/* 31 */
+/* 30 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5651,8 +5632,8 @@ exports.Trees = Trees;
 
 var Token = __webpack_require__(1).Token;
 var ATN = __webpack_require__(8).ATN;
-var ATNType = __webpack_require__(59).ATNType;
-var ATNStates = __webpack_require__(5);
+var ATNType = __webpack_require__(57).ATNType;
+var ATNStates = __webpack_require__(4);
 var ATNState = ATNStates.ATNState;
 var BasicState = ATNStates.BasicState;
 var DecisionState = ATNStates.DecisionState;
@@ -5682,8 +5663,8 @@ var PredicateTransition = Transitions.PredicateTransition;
 var PrecedencePredicateTransition = Transitions.PrecedencePredicateTransition;
 var IntervalSet = __webpack_require__(2).IntervalSet;
 var Interval = __webpack_require__(2).Interval;
-var ATNDeserializationOptions = __webpack_require__(32).ATNDeserializationOptions;
-var LexerActions = __webpack_require__(33);
+var ATNDeserializationOptions = __webpack_require__(31).ATNDeserializationOptions;
+var LexerActions = __webpack_require__(32);
 var LexerActionType = LexerActions.LexerActionType;
 var LexerSkipAction = LexerActions.LexerSkipAction;
 var LexerChannelAction = LexerActions.LexerChannelAction;
@@ -6356,7 +6337,7 @@ ATNDeserializer.prototype.lexerActionFactory = function (type, data1, data2) {
 exports.ATNDeserializer = ATNDeserializer;
 
 /***/ }),
-/* 32 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6389,7 +6370,7 @@ ATNDeserializationOptions.defaultOptions.readOnly = true;
 exports.ATNDeserializationOptions = ATNDeserializationOptions;
 
 /***/ }),
-/* 33 */
+/* 32 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6756,7 +6737,7 @@ exports.LexerPopModeAction = LexerPopModeAction;
 exports.LexerModeAction = LexerModeAction;
 
 /***/ }),
-/* 34 */
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6814,7 +6795,7 @@ ATNSimulator.prototype.getCachedContext = function (context) {
 exports.ATNSimulator = ATNSimulator;
 
 /***/ }),
-/* 35 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6836,9 +6817,9 @@ var Map = __webpack_require__(0).Map;
 var BitSet = __webpack_require__(0).BitSet;
 var AltDict = __webpack_require__(0).AltDict;
 var ATN = __webpack_require__(8).ATN;
-var RuleStopState = __webpack_require__(5).RuleStopState;
+var RuleStopState = __webpack_require__(4).RuleStopState;
 var ATNConfigSet = __webpack_require__(9).ATNConfigSet;
-var ATNConfig = __webpack_require__(16).ATNConfig;
+var ATNConfig = __webpack_require__(15).ATNConfig;
 var SemanticContext = __webpack_require__(10).SemanticContext;
 var Hash = __webpack_require__(0).Hash;
 var hashStuff = __webpack_require__(0).hashStuff;
@@ -7387,7 +7368,7 @@ PredictionMode.getSingleViableAlt = function (altsets) {
 exports.PredictionMode = PredictionMode;
 
 /***/ }),
-/* 36 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -7406,7 +7387,7 @@ var NoViableAltException = Errors.NoViableAltException;
 var InputMismatchException = Errors.InputMismatchException;
 var FailedPredicateException = Errors.FailedPredicateException;
 var ParseCancellationException = Errors.ParseCancellationException;
-var ATNState = __webpack_require__(5).ATNState;
+var ATNState = __webpack_require__(4).ATNState;
 var Interval = __webpack_require__(2).Interval;
 var IntervalSet = __webpack_require__(2).IntervalSet;
 
@@ -8135,96 +8116,32 @@ exports.BailErrorStrategy = BailErrorStrategy;
 exports.DefaultErrorStrategy = DefaultErrorStrategy;
 
 /***/ }),
+/* 36 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/***/ }),
 /* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
-/***/ }),
-/* 38 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-// Generated from lib/Expr.g4 by ANTLR 4.7
-// jshint ignore: start
-var antlr4 = __webpack_require__(17);
-
-// This class defines a complete listener for a parse tree produced by ExprParser.
-function ExprListener() {
-	antlr4.tree.ParseTreeListener.call(this);
-	return this;
-}
-
-ExprListener.prototype = Object.create(antlr4.tree.ParseTreeListener.prototype);
-ExprListener.prototype.constructor = ExprListener;
-
-// Enter a parse tree produced by ExprParser#prog.
-ExprListener.prototype.enterProg = function (ctx) {};
-
-// Exit a parse tree produced by ExprParser#prog.
-ExprListener.prototype.exitProg = function (ctx) {};
-
-// Enter a parse tree produced by ExprParser#paren.
-ExprListener.prototype.enterParen = function (ctx) {};
-
-// Exit a parse tree produced by ExprParser#paren.
-ExprListener.prototype.exitParen = function (ctx) {};
-
-// Enter a parse tree produced by ExprParser#compare.
-ExprListener.prototype.enterCompare = function (ctx) {};
-
-// Exit a parse tree produced by ExprParser#compare.
-ExprListener.prototype.exitCompare = function (ctx) {};
-
-// Enter a parse tree produced by ExprParser#blank.
-ExprListener.prototype.enterBlank = function (ctx) {};
-
-// Exit a parse tree produced by ExprParser#blank.
-ExprListener.prototype.exitBlank = function (ctx) {};
-
-// Enter a parse tree produced by ExprParser#or.
-ExprListener.prototype.enterOr = function (ctx) {};
-
-// Exit a parse tree produced by ExprParser#or.
-ExprListener.prototype.exitOr = function (ctx) {};
-
-// Enter a parse tree produced by ExprParser#func.
-ExprListener.prototype.enterFunc = function (ctx) {};
-
-// Exit a parse tree produced by ExprParser#func.
-ExprListener.prototype.exitFunc = function (ctx) {};
-
-// Enter a parse tree produced by ExprParser#and.
-ExprListener.prototype.enterAnd = function (ctx) {};
-
-// Exit a parse tree produced by ExprParser#and.
-ExprListener.prototype.exitAnd = function (ctx) {};
-
-exports.ExprListener = ExprListener;
-
-/***/ }),
-/* 39 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _brace = __webpack_require__(40);
+var _brace = __webpack_require__(38);
 
 var _brace2 = _interopRequireDefault(_brace);
 
-__webpack_require__(42);
+__webpack_require__(40);
 
-var _debounce = __webpack_require__(43);
+var _debounce = __webpack_require__(41);
 
 var _debounce2 = _interopRequireDefault(_debounce);
 
-__webpack_require__(52);
+__webpack_require__(50);
 
-var _validate = __webpack_require__(53);
+var _validate = __webpack_require__(51);
 
 var _validate2 = _interopRequireDefault(_validate);
 
@@ -8266,7 +8183,7 @@ session.on('change', debounced);
 // };
 
 /***/ }),
-/* 40 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8736,7 +8653,7 @@ z-index: 8;\
 .ace_br14{border-top-right-radius   : 3px; border-bottom-right-radius: 3px; border-bottom-left-radius:  3px;}\
 .ace_br15{border-top-left-radius    : 3px; border-top-right-radius:    3px; border-bottom-right-radius: 3px; border-bottom-left-radius: 3px;}\
 ";dom.importCssString(editorCss,"ace_editor.css");var VirtualRenderer=function VirtualRenderer(container,theme){var _self=this;this.container=container||dom.createElement("div");this.$keepTextAreaAtCursor=!useragent.isOldIE;dom.addCssClass(this.container,"ace_editor");this.setTheme(theme);this.$gutter=dom.createElement("div");this.$gutter.className="ace_gutter";this.container.appendChild(this.$gutter);this.scroller=dom.createElement("div");this.scroller.className="ace_scroller";this.container.appendChild(this.scroller);this.content=dom.createElement("div");this.content.className="ace_content";this.scroller.appendChild(this.content);this.$gutterLayer=new GutterLayer(this.$gutter);this.$gutterLayer.on("changeGutterWidth",this.onGutterResize.bind(this));this.$markerBack=new MarkerLayer(this.content);var textLayer=this.$textLayer=new TextLayer(this.content);this.canvas=textLayer.element;this.$markerFront=new MarkerLayer(this.content);this.$cursorLayer=new CursorLayer(this.content);this.$horizScroll=false;this.$vScroll=false;this.scrollBar=this.scrollBarV=new VScrollBar(this.container,this);this.scrollBarH=new HScrollBar(this.container,this);this.scrollBarV.addEventListener("scroll",function(e){if(!_self.$scrollAnimation)_self.session.setScrollTop(e.data-_self.scrollMargin.top);});this.scrollBarH.addEventListener("scroll",function(e){if(!_self.$scrollAnimation)_self.session.setScrollLeft(e.data-_self.scrollMargin.left);});this.scrollTop=0;this.scrollLeft=0;this.cursorPos={row:0,column:0};this.$fontMetrics=new FontMetrics(this.container);this.$textLayer.$setFontMetrics(this.$fontMetrics);this.$textLayer.addEventListener("changeCharacterSize",function(e){_self.updateCharacterSize();_self.onResize(true,_self.gutterWidth,_self.$size.width,_self.$size.height);_self._signal("changeCharacterSize",e);});this.$size={width:0,height:0,scrollerHeight:0,scrollerWidth:0,$dirty:true};this.layerConfig={width:1,padding:0,firstRow:0,firstRowScreen:0,lastRow:0,lineHeight:0,characterWidth:0,minHeight:1,maxHeight:1,offset:0,height:1,gutterOffset:1};this.scrollMargin={left:0,right:0,top:0,bottom:0,v:0,h:0};this.$loop=new RenderLoop(this.$renderChanges.bind(this),this.container.ownerDocument.defaultView);this.$loop.schedule(this.CHANGE_FULL);this.updateCharacterSize();this.setPadding(4);config.resetOptions(this);config._emit("renderer",this);};(function(){this.CHANGE_CURSOR=1;this.CHANGE_MARKER=2;this.CHANGE_GUTTER=4;this.CHANGE_SCROLL=8;this.CHANGE_LINES=16;this.CHANGE_TEXT=32;this.CHANGE_SIZE=64;this.CHANGE_MARKER_BACK=128;this.CHANGE_MARKER_FRONT=256;this.CHANGE_FULL=512;this.CHANGE_H_SCROLL=1024;oop.implement(this,EventEmitter);this.updateCharacterSize=function(){if(this.$textLayer.allowBoldFonts!=this.$allowBoldFonts){this.$allowBoldFonts=this.$textLayer.allowBoldFonts;this.setStyle("ace_nobold",!this.$allowBoldFonts);}this.layerConfig.characterWidth=this.characterWidth=this.$textLayer.getCharacterWidth();this.layerConfig.lineHeight=this.lineHeight=this.$textLayer.getLineHeight();this.$updatePrintMargin();};this.setSession=function(session){if(this.session)this.session.doc.off("changeNewLineMode",this.onChangeNewLineMode);this.session=session;if(session&&this.scrollMargin.top&&session.getScrollTop()<=0)session.setScrollTop(-this.scrollMargin.top);this.$cursorLayer.setSession(session);this.$markerBack.setSession(session);this.$markerFront.setSession(session);this.$gutterLayer.setSession(session);this.$textLayer.setSession(session);if(!session)return;this.$loop.schedule(this.CHANGE_FULL);this.session.$setFontMetrics(this.$fontMetrics);this.scrollBarV.scrollLeft=this.scrollBarV.scrollTop=null;this.onChangeNewLineMode=this.onChangeNewLineMode.bind(this);this.onChangeNewLineMode();this.session.doc.on("changeNewLineMode",this.onChangeNewLineMode);};this.updateLines=function(firstRow,lastRow,force){if(lastRow===undefined)lastRow=Infinity;if(!this.$changedLines){this.$changedLines={firstRow:firstRow,lastRow:lastRow};}else{if(this.$changedLines.firstRow>firstRow)this.$changedLines.firstRow=firstRow;if(this.$changedLines.lastRow<lastRow)this.$changedLines.lastRow=lastRow;}if(this.$changedLines.lastRow<this.layerConfig.firstRow){if(force)this.$changedLines.lastRow=this.layerConfig.lastRow;else return;}if(this.$changedLines.firstRow>this.layerConfig.lastRow)return;this.$loop.schedule(this.CHANGE_LINES);};this.onChangeNewLineMode=function(){this.$loop.schedule(this.CHANGE_TEXT);this.$textLayer.$updateEolChar();};this.onChangeTabSize=function(){this.$loop.schedule(this.CHANGE_TEXT|this.CHANGE_MARKER);this.$textLayer.onChangeTabSize();};this.updateText=function(){this.$loop.schedule(this.CHANGE_TEXT);};this.updateFull=function(force){if(force)this.$renderChanges(this.CHANGE_FULL,true);else this.$loop.schedule(this.CHANGE_FULL);};this.updateFontSize=function(){this.$textLayer.checkForSizeChanges();};this.$changes=0;this.$updateSizeAsync=function(){if(this.$loop.pending)this.$size.$dirty=true;else this.onResize();};this.onResize=function(force,gutterWidth,width,height){if(this.resizing>2)return;else if(this.resizing>0)this.resizing++;else this.resizing=force?1:0;var el=this.container;if(!height)height=el.clientHeight||el.scrollHeight;if(!width)width=el.clientWidth||el.scrollWidth;var changes=this.$updateCachedSize(force,gutterWidth,width,height);if(!this.$size.scrollerHeight||!width&&!height)return this.resizing=0;if(force)this.$gutterLayer.$padding=null;if(force)this.$renderChanges(changes|this.$changes,true);else this.$loop.schedule(changes|this.$changes);if(this.resizing)this.resizing=0;this.scrollBarV.scrollLeft=this.scrollBarV.scrollTop=null;};this.$updateCachedSize=function(force,gutterWidth,width,height){height-=this.$extraHeight||0;var changes=0;var size=this.$size;var oldSize={width:size.width,height:size.height,scrollerHeight:size.scrollerHeight,scrollerWidth:size.scrollerWidth};if(height&&(force||size.height!=height)){size.height=height;changes|=this.CHANGE_SIZE;size.scrollerHeight=size.height;if(this.$horizScroll)size.scrollerHeight-=this.scrollBarH.getHeight();this.scrollBarV.element.style.bottom=this.scrollBarH.getHeight()+"px";changes=changes|this.CHANGE_SCROLL;}if(width&&(force||size.width!=width)){changes|=this.CHANGE_SIZE;size.width=width;if(gutterWidth==null)gutterWidth=this.$showGutter?this.$gutter.offsetWidth:0;this.gutterWidth=gutterWidth;this.scrollBarH.element.style.left=this.scroller.style.left=gutterWidth+"px";size.scrollerWidth=Math.max(0,width-gutterWidth-this.scrollBarV.getWidth());this.scrollBarH.element.style.right=this.scroller.style.right=this.scrollBarV.getWidth()+"px";this.scroller.style.bottom=this.scrollBarH.getHeight()+"px";if(this.session&&this.session.getUseWrapMode()&&this.adjustWrapLimit()||force)changes|=this.CHANGE_FULL;}size.$dirty=!width||!height;if(changes)this._signal("resize",oldSize);return changes;};this.onGutterResize=function(){var gutterWidth=this.$showGutter?this.$gutter.offsetWidth:0;if(gutterWidth!=this.gutterWidth)this.$changes|=this.$updateCachedSize(true,gutterWidth,this.$size.width,this.$size.height);if(this.session.getUseWrapMode()&&this.adjustWrapLimit()){this.$loop.schedule(this.CHANGE_FULL);}else if(this.$size.$dirty){this.$loop.schedule(this.CHANGE_FULL);}else{this.$computeLayerConfig();this.$loop.schedule(this.CHANGE_MARKER);}};this.adjustWrapLimit=function(){var availableWidth=this.$size.scrollerWidth-this.$padding*2;var limit=Math.floor(availableWidth/this.characterWidth);return this.session.adjustWrapLimit(limit,this.$showPrintMargin&&this.$printMarginColumn);};this.setAnimatedScroll=function(shouldAnimate){this.setOption("animatedScroll",shouldAnimate);};this.getAnimatedScroll=function(){return this.$animatedScroll;};this.setShowInvisibles=function(showInvisibles){this.setOption("showInvisibles",showInvisibles);};this.getShowInvisibles=function(){return this.getOption("showInvisibles");};this.getDisplayIndentGuides=function(){return this.getOption("displayIndentGuides");};this.setDisplayIndentGuides=function(display){this.setOption("displayIndentGuides",display);};this.setShowPrintMargin=function(showPrintMargin){this.setOption("showPrintMargin",showPrintMargin);};this.getShowPrintMargin=function(){return this.getOption("showPrintMargin");};this.setPrintMarginColumn=function(showPrintMargin){this.setOption("printMarginColumn",showPrintMargin);};this.getPrintMarginColumn=function(){return this.getOption("printMarginColumn");};this.getShowGutter=function(){return this.getOption("showGutter");};this.setShowGutter=function(show){return this.setOption("showGutter",show);};this.getFadeFoldWidgets=function(){return this.getOption("fadeFoldWidgets");};this.setFadeFoldWidgets=function(show){this.setOption("fadeFoldWidgets",show);};this.setHighlightGutterLine=function(shouldHighlight){this.setOption("highlightGutterLine",shouldHighlight);};this.getHighlightGutterLine=function(){return this.getOption("highlightGutterLine");};this.$updateGutterLineHighlight=function(){var pos=this.$cursorLayer.$pixelPos;var height=this.layerConfig.lineHeight;if(this.session.getUseWrapMode()){var cursor=this.session.selection.getCursor();cursor.column=0;pos=this.$cursorLayer.getPixelPosition(cursor,true);height*=this.session.getRowLength(cursor.row);}this.$gutterLineHighlight.style.top=pos.top-this.layerConfig.offset+"px";this.$gutterLineHighlight.style.height=height+"px";};this.$updatePrintMargin=function(){if(!this.$showPrintMargin&&!this.$printMarginEl)return;if(!this.$printMarginEl){var containerEl=dom.createElement("div");containerEl.className="ace_layer ace_print-margin-layer";this.$printMarginEl=dom.createElement("div");this.$printMarginEl.className="ace_print-margin";containerEl.appendChild(this.$printMarginEl);this.content.insertBefore(containerEl,this.content.firstChild);}var style=this.$printMarginEl.style;style.left=this.characterWidth*this.$printMarginColumn+this.$padding+"px";style.visibility=this.$showPrintMargin?"visible":"hidden";if(this.session&&this.session.$wrap==-1)this.adjustWrapLimit();};this.getContainerElement=function(){return this.container;};this.getMouseEventTarget=function(){return this.scroller;};this.getTextAreaContainer=function(){return this.container;};this.$moveTextAreaToCursor=function(){if(!this.$keepTextAreaAtCursor)return;var config=this.layerConfig;var posTop=this.$cursorLayer.$pixelPos.top;var posLeft=this.$cursorLayer.$pixelPos.left;posTop-=config.offset;var style=this.textarea.style;var h=this.lineHeight;if(posTop<0||posTop>config.height-h){style.top=style.left="0";return;}var w=this.characterWidth;if(this.$composition){var val=this.textarea.value.replace(/^\x01+/,"");w*=this.session.$getStringScreenWidth(val)[0]+2;h+=2;}posLeft-=this.scrollLeft;if(posLeft>this.$size.scrollerWidth-w)posLeft=this.$size.scrollerWidth-w;posLeft+=this.gutterWidth;style.height=h+"px";style.width=w+"px";style.left=Math.min(posLeft,this.$size.scrollerWidth-w)+"px";style.top=Math.min(posTop,this.$size.height-h)+"px";};this.getFirstVisibleRow=function(){return this.layerConfig.firstRow;};this.getFirstFullyVisibleRow=function(){return this.layerConfig.firstRow+(this.layerConfig.offset===0?0:1);};this.getLastFullyVisibleRow=function(){var config=this.layerConfig;var lastRow=config.lastRow;var top=this.session.documentToScreenRow(lastRow,0)*config.lineHeight;if(top-this.session.getScrollTop()>config.height-config.lineHeight)return lastRow-1;return lastRow;};this.getLastVisibleRow=function(){return this.layerConfig.lastRow;};this.$padding=null;this.setPadding=function(padding){this.$padding=padding;this.$textLayer.setPadding(padding);this.$cursorLayer.setPadding(padding);this.$markerFront.setPadding(padding);this.$markerBack.setPadding(padding);this.$loop.schedule(this.CHANGE_FULL);this.$updatePrintMargin();};this.setScrollMargin=function(top,bottom,left,right){var sm=this.scrollMargin;sm.top=top|0;sm.bottom=bottom|0;sm.right=right|0;sm.left=left|0;sm.v=sm.top+sm.bottom;sm.h=sm.left+sm.right;if(sm.top&&this.scrollTop<=0&&this.session)this.session.setScrollTop(-sm.top);this.updateFull();};this.getHScrollBarAlwaysVisible=function(){return this.$hScrollBarAlwaysVisible;};this.setHScrollBarAlwaysVisible=function(alwaysVisible){this.setOption("hScrollBarAlwaysVisible",alwaysVisible);};this.getVScrollBarAlwaysVisible=function(){return this.$vScrollBarAlwaysVisible;};this.setVScrollBarAlwaysVisible=function(alwaysVisible){this.setOption("vScrollBarAlwaysVisible",alwaysVisible);};this.$updateScrollBarV=function(){var scrollHeight=this.layerConfig.maxHeight;var scrollerHeight=this.$size.scrollerHeight;if(!this.$maxLines&&this.$scrollPastEnd){scrollHeight-=(scrollerHeight-this.lineHeight)*this.$scrollPastEnd;if(this.scrollTop>scrollHeight-scrollerHeight){scrollHeight=this.scrollTop+scrollerHeight;this.scrollBarV.scrollTop=null;}}this.scrollBarV.setScrollHeight(scrollHeight+this.scrollMargin.v);this.scrollBarV.setScrollTop(this.scrollTop+this.scrollMargin.top);};this.$updateScrollBarH=function(){this.scrollBarH.setScrollWidth(this.layerConfig.width+2*this.$padding+this.scrollMargin.h);this.scrollBarH.setScrollLeft(this.scrollLeft+this.scrollMargin.left);};this.$frozen=false;this.freeze=function(){this.$frozen=true;};this.unfreeze=function(){this.$frozen=false;};this.$renderChanges=function(changes,force){if(this.$changes){changes|=this.$changes;this.$changes=0;}if(!this.session||!this.container.offsetWidth||this.$frozen||!changes&&!force){this.$changes|=changes;return;}if(this.$size.$dirty){this.$changes|=changes;return this.onResize(true);}if(!this.lineHeight){this.$textLayer.checkForSizeChanges();}this._signal("beforeRender");var config=this.layerConfig;if(changes&this.CHANGE_FULL||changes&this.CHANGE_SIZE||changes&this.CHANGE_TEXT||changes&this.CHANGE_LINES||changes&this.CHANGE_SCROLL||changes&this.CHANGE_H_SCROLL){changes|=this.$computeLayerConfig();if(config.firstRow!=this.layerConfig.firstRow&&config.firstRowScreen==this.layerConfig.firstRowScreen){var st=this.scrollTop+(config.firstRow-this.layerConfig.firstRow)*this.lineHeight;if(st>0){this.scrollTop=st;changes=changes|this.CHANGE_SCROLL;changes|=this.$computeLayerConfig();}}config=this.layerConfig;this.$updateScrollBarV();if(changes&this.CHANGE_H_SCROLL)this.$updateScrollBarH();this.$gutterLayer.element.style.marginTop=-config.offset+"px";this.content.style.marginTop=-config.offset+"px";this.content.style.width=config.width+2*this.$padding+"px";this.content.style.height=config.minHeight+"px";}if(changes&this.CHANGE_H_SCROLL){this.content.style.marginLeft=-this.scrollLeft+"px";this.scroller.className=this.scrollLeft<=0?"ace_scroller":"ace_scroller ace_scroll-left";}if(changes&this.CHANGE_FULL){this.$textLayer.update(config);if(this.$showGutter)this.$gutterLayer.update(config);this.$markerBack.update(config);this.$markerFront.update(config);this.$cursorLayer.update(config);this.$moveTextAreaToCursor();this.$highlightGutterLine&&this.$updateGutterLineHighlight();this._signal("afterRender");return;}if(changes&this.CHANGE_SCROLL){if(changes&this.CHANGE_TEXT||changes&this.CHANGE_LINES)this.$textLayer.update(config);else this.$textLayer.scrollLines(config);if(this.$showGutter)this.$gutterLayer.update(config);this.$markerBack.update(config);this.$markerFront.update(config);this.$cursorLayer.update(config);this.$highlightGutterLine&&this.$updateGutterLineHighlight();this.$moveTextAreaToCursor();this._signal("afterRender");return;}if(changes&this.CHANGE_TEXT){this.$textLayer.update(config);if(this.$showGutter)this.$gutterLayer.update(config);}else if(changes&this.CHANGE_LINES){if(this.$updateLines()||changes&this.CHANGE_GUTTER&&this.$showGutter)this.$gutterLayer.update(config);}else if(changes&this.CHANGE_TEXT||changes&this.CHANGE_GUTTER){if(this.$showGutter)this.$gutterLayer.update(config);}if(changes&this.CHANGE_CURSOR){this.$cursorLayer.update(config);this.$moveTextAreaToCursor();this.$highlightGutterLine&&this.$updateGutterLineHighlight();}if(changes&(this.CHANGE_MARKER|this.CHANGE_MARKER_FRONT)){this.$markerFront.update(config);}if(changes&(this.CHANGE_MARKER|this.CHANGE_MARKER_BACK)){this.$markerBack.update(config);}this._signal("afterRender");};this.$autosize=function(){var height=this.session.getScreenLength()*this.lineHeight;var maxHeight=this.$maxLines*this.lineHeight;var desiredHeight=Math.min(maxHeight,Math.max((this.$minLines||1)*this.lineHeight,height))+this.scrollMargin.v+(this.$extraHeight||0);if(this.$horizScroll)desiredHeight+=this.scrollBarH.getHeight();if(this.$maxPixelHeight&&desiredHeight>this.$maxPixelHeight)desiredHeight=this.$maxPixelHeight;var vScroll=height>maxHeight;if(desiredHeight!=this.desiredHeight||this.$size.height!=this.desiredHeight||vScroll!=this.$vScroll){if(vScroll!=this.$vScroll){this.$vScroll=vScroll;this.scrollBarV.setVisible(vScroll);}var w=this.container.clientWidth;this.container.style.height=desiredHeight+"px";this.$updateCachedSize(true,this.$gutterWidth,w,desiredHeight);this.desiredHeight=desiredHeight;this._signal("autosize");}};this.$computeLayerConfig=function(){var session=this.session;var size=this.$size;var hideScrollbars=size.height<=2*this.lineHeight;var screenLines=this.session.getScreenLength();var maxHeight=screenLines*this.lineHeight;var longestLine=this.$getLongestLine();var horizScroll=!hideScrollbars&&(this.$hScrollBarAlwaysVisible||size.scrollerWidth-longestLine-2*this.$padding<0);var hScrollChanged=this.$horizScroll!==horizScroll;if(hScrollChanged){this.$horizScroll=horizScroll;this.scrollBarH.setVisible(horizScroll);}var vScrollBefore=this.$vScroll;// autosize can change vscroll value in which case we need to update longestLine
-if(this.$maxLines&&this.lineHeight>1)this.$autosize();var offset=this.scrollTop%this.lineHeight;var minHeight=size.scrollerHeight+this.lineHeight;var scrollPastEnd=!this.$maxLines&&this.$scrollPastEnd?(size.scrollerHeight-this.lineHeight)*this.$scrollPastEnd:0;maxHeight+=scrollPastEnd;var sm=this.scrollMargin;this.session.setScrollTop(Math.max(-sm.top,Math.min(this.scrollTop,maxHeight-size.scrollerHeight+sm.bottom)));this.session.setScrollLeft(Math.max(-sm.left,Math.min(this.scrollLeft,longestLine+2*this.$padding-size.scrollerWidth+sm.right)));var vScroll=!hideScrollbars&&(this.$vScrollBarAlwaysVisible||size.scrollerHeight-maxHeight+scrollPastEnd<0||this.scrollTop>sm.top);var vScrollChanged=vScrollBefore!==vScroll;if(vScrollChanged){this.$vScroll=vScroll;this.scrollBarV.setVisible(vScroll);}var lineCount=Math.ceil(minHeight/this.lineHeight)-1;var firstRow=Math.max(0,Math.round((this.scrollTop-offset)/this.lineHeight));var lastRow=firstRow+lineCount;var firstRowScreen,firstRowHeight;var lineHeight=this.lineHeight;firstRow=session.screenToDocumentRow(firstRow,0);var foldLine=session.getFoldLine(firstRow);if(foldLine){firstRow=foldLine.start.row;}firstRowScreen=session.documentToScreenRow(firstRow,0);firstRowHeight=session.getRowLength(firstRow)*lineHeight;lastRow=Math.min(session.screenToDocumentRow(lastRow,0),session.getLength()-1);minHeight=size.scrollerHeight+session.getRowLength(lastRow)*lineHeight+firstRowHeight;offset=this.scrollTop-firstRowScreen*lineHeight;var changes=0;if(this.layerConfig.width!=longestLine)changes=this.CHANGE_H_SCROLL;if(hScrollChanged||vScrollChanged){changes=this.$updateCachedSize(true,this.gutterWidth,size.width,size.height);this._signal("scrollbarVisibilityChanged");if(vScrollChanged)longestLine=this.$getLongestLine();}this.layerConfig={width:longestLine,padding:this.$padding,firstRow:firstRow,firstRowScreen:firstRowScreen,lastRow:lastRow,lineHeight:lineHeight,characterWidth:this.characterWidth,minHeight:minHeight,maxHeight:maxHeight,offset:offset,gutterOffset:lineHeight?Math.max(0,Math.ceil((offset+size.height-size.scrollerHeight)/lineHeight)):0,height:this.$size.scrollerHeight};return changes;};this.$updateLines=function(){var firstRow=this.$changedLines.firstRow;var lastRow=this.$changedLines.lastRow;this.$changedLines=null;var layerConfig=this.layerConfig;if(firstRow>layerConfig.lastRow+1){return;}if(lastRow<layerConfig.firstRow){return;}if(lastRow===Infinity){if(this.$showGutter)this.$gutterLayer.update(layerConfig);this.$textLayer.update(layerConfig);return;}this.$textLayer.updateLines(layerConfig,firstRow,lastRow);return true;};this.$getLongestLine=function(){var charCount=this.session.getScreenWidth();if(this.showInvisibles&&!this.session.$useWrapMode)charCount+=1;return Math.max(this.$size.scrollerWidth-2*this.$padding,Math.round(charCount*this.characterWidth));};this.updateFrontMarkers=function(){this.$markerFront.setMarkers(this.session.getMarkers(true));this.$loop.schedule(this.CHANGE_MARKER_FRONT);};this.updateBackMarkers=function(){this.$markerBack.setMarkers(this.session.getMarkers());this.$loop.schedule(this.CHANGE_MARKER_BACK);};this.addGutterDecoration=function(row,className){this.$gutterLayer.addGutterDecoration(row,className);};this.removeGutterDecoration=function(row,className){this.$gutterLayer.removeGutterDecoration(row,className);};this.updateBreakpoints=function(rows){this.$loop.schedule(this.CHANGE_GUTTER);};this.setAnnotations=function(annotations){this.$gutterLayer.setAnnotations(annotations);this.$loop.schedule(this.CHANGE_GUTTER);};this.updateCursor=function(){this.$loop.schedule(this.CHANGE_CURSOR);};this.hideCursor=function(){this.$cursorLayer.hideCursor();};this.showCursor=function(){this.$cursorLayer.showCursor();};this.scrollSelectionIntoView=function(anchor,lead,offset){this.scrollCursorIntoView(anchor,offset);this.scrollCursorIntoView(lead,offset);};this.scrollCursorIntoView=function(cursor,offset,$viewMargin){if(this.$size.scrollerHeight===0)return;var pos=this.$cursorLayer.getPixelPosition(cursor);var left=pos.left;var top=pos.top;var topMargin=$viewMargin&&$viewMargin.top||0;var bottomMargin=$viewMargin&&$viewMargin.bottom||0;var scrollTop=this.$scrollAnimation?this.session.getScrollTop():this.scrollTop;if(scrollTop+topMargin>top){if(offset&&scrollTop+topMargin>top+this.lineHeight)top-=offset*this.$size.scrollerHeight;if(top===0)top=-this.scrollMargin.top;this.session.setScrollTop(top);}else if(scrollTop+this.$size.scrollerHeight-bottomMargin<top+this.lineHeight){if(offset&&scrollTop+this.$size.scrollerHeight-bottomMargin<top-this.lineHeight)top+=offset*this.$size.scrollerHeight;this.session.setScrollTop(top+this.lineHeight-this.$size.scrollerHeight);}var scrollLeft=this.scrollLeft;if(scrollLeft>left){if(left<this.$padding+2*this.layerConfig.characterWidth)left=-this.scrollMargin.left;this.session.setScrollLeft(left);}else if(scrollLeft+this.$size.scrollerWidth<left+this.characterWidth){this.session.setScrollLeft(Math.round(left+this.characterWidth-this.$size.scrollerWidth));}else if(scrollLeft<=this.$padding&&left-scrollLeft<this.characterWidth){this.session.setScrollLeft(0);}};this.getScrollTop=function(){return this.session.getScrollTop();};this.getScrollLeft=function(){return this.session.getScrollLeft();};this.getScrollTopRow=function(){return this.scrollTop/this.lineHeight;};this.getScrollBottomRow=function(){return Math.max(0,Math.floor((this.scrollTop+this.$size.scrollerHeight)/this.lineHeight)-1);};this.scrollToRow=function(row){this.session.setScrollTop(row*this.lineHeight);};this.alignCursor=function(cursor,alignment){if(typeof cursor=="number")cursor={row:cursor,column:0};var pos=this.$cursorLayer.getPixelPosition(cursor);var h=this.$size.scrollerHeight-this.lineHeight;var offset=pos.top-h*(alignment||0);this.session.setScrollTop(offset);return offset;};this.STEPS=8;this.$calcSteps=function(fromValue,toValue){var i=0;var l=this.STEPS;var steps=[];var func=function func(t,x_min,dx){return dx*(Math.pow(t-1,3)+1)+x_min;};for(i=0;i<l;++i){steps.push(func(i/this.STEPS,fromValue,toValue-fromValue));}return steps;};this.scrollToLine=function(line,center,animate,callback){var pos=this.$cursorLayer.getPixelPosition({row:line,column:0});var offset=pos.top;if(center)offset-=this.$size.scrollerHeight/2;var initialScroll=this.scrollTop;this.session.setScrollTop(offset);if(animate!==false)this.animateScrolling(initialScroll,callback);};this.animateScrolling=function(fromValue,callback){var toValue=this.scrollTop;if(!this.$animatedScroll)return;var _self=this;if(fromValue==toValue)return;if(this.$scrollAnimation){var oldSteps=this.$scrollAnimation.steps;if(oldSteps.length){fromValue=oldSteps[0];if(fromValue==toValue)return;}}var steps=_self.$calcSteps(fromValue,toValue);this.$scrollAnimation={from:fromValue,to:toValue,steps:steps};clearInterval(this.$timer);_self.session.setScrollTop(steps.shift());_self.session.$scrollTop=toValue;this.$timer=setInterval(function(){if(steps.length){_self.session.setScrollTop(steps.shift());_self.session.$scrollTop=toValue;}else if(toValue!=null){_self.session.$scrollTop=-1;_self.session.setScrollTop(toValue);toValue=null;}else{_self.$timer=clearInterval(_self.$timer);_self.$scrollAnimation=null;callback&&callback();}},10);};this.scrollToY=function(scrollTop){if(this.scrollTop!==scrollTop){this.$loop.schedule(this.CHANGE_SCROLL);this.scrollTop=scrollTop;}};this.scrollToX=function(scrollLeft){if(this.scrollLeft!==scrollLeft)this.scrollLeft=scrollLeft;this.$loop.schedule(this.CHANGE_H_SCROLL);};this.scrollTo=function(x,y){this.session.setScrollTop(y);this.session.setScrollLeft(y);};this.scrollBy=function(deltaX,deltaY){deltaY&&this.session.setScrollTop(this.session.getScrollTop()+deltaY);deltaX&&this.session.setScrollLeft(this.session.getScrollLeft()+deltaX);};this.isScrollableBy=function(deltaX,deltaY){if(deltaY<0&&this.session.getScrollTop()>=1-this.scrollMargin.top)return true;if(deltaY>0&&this.session.getScrollTop()+this.$size.scrollerHeight-this.layerConfig.maxHeight<-1+this.scrollMargin.bottom)return true;if(deltaX<0&&this.session.getScrollLeft()>=1-this.scrollMargin.left)return true;if(deltaX>0&&this.session.getScrollLeft()+this.$size.scrollerWidth-this.layerConfig.width<-1+this.scrollMargin.right)return true;};this.pixelToScreenCoordinates=function(x,y){var canvasPos=this.scroller.getBoundingClientRect();var offset=(x+this.scrollLeft-canvasPos.left-this.$padding)/this.characterWidth;var row=Math.floor((y+this.scrollTop-canvasPos.top)/this.lineHeight);var col=Math.round(offset);return{row:row,column:col,side:offset-col>0?1:-1};};this.screenToTextCoordinates=function(x,y){var canvasPos=this.scroller.getBoundingClientRect();var col=Math.round((x+this.scrollLeft-canvasPos.left-this.$padding)/this.characterWidth);var row=(y+this.scrollTop-canvasPos.top)/this.lineHeight;return this.session.screenToDocumentPosition(row,Math.max(col,0));};this.textToScreenCoordinates=function(row,column){var canvasPos=this.scroller.getBoundingClientRect();var pos=this.session.documentToScreenPosition(row,column);var x=this.$padding+Math.round(pos.column*this.characterWidth);var y=pos.row*this.lineHeight;return{pageX:canvasPos.left+x-this.scrollLeft,pageY:canvasPos.top+y-this.scrollTop};};this.visualizeFocus=function(){dom.addCssClass(this.container,"ace_focus");};this.visualizeBlur=function(){dom.removeCssClass(this.container,"ace_focus");};this.showComposition=function(position){if(!this.$composition)this.$composition={keepTextAreaAtCursor:this.$keepTextAreaAtCursor,cssText:this.textarea.style.cssText};this.$keepTextAreaAtCursor=true;dom.addCssClass(this.textarea,"ace_composition");this.textarea.style.cssText="";this.$moveTextAreaToCursor();};this.setCompositionText=function(text){this.$moveTextAreaToCursor();};this.hideComposition=function(){if(!this.$composition)return;dom.removeCssClass(this.textarea,"ace_composition");this.$keepTextAreaAtCursor=this.$composition.keepTextAreaAtCursor;this.textarea.style.cssText=this.$composition.cssText;this.$composition=null;};this.setTheme=function(theme,cb){var _self=this;this.$themeId=theme;_self._dispatchEvent('themeChange',{theme:theme});if(!theme||typeof theme=="string"){var moduleName=theme||this.$options.theme.initialValue;config.loadModule(["theme",moduleName],afterLoad);}else{afterLoad(theme);}function afterLoad(module){if(_self.$themeId!=theme)return cb&&cb();if(!module||!module.cssClass)throw new Error("couldn't load module "+theme+" or it didn't call define");dom.importCssString(module.cssText,module.cssClass,_self.container.ownerDocument);if(_self.theme)dom.removeCssClass(_self.container,_self.theme.cssClass);var padding="padding"in module?module.padding:"padding"in(_self.theme||{})?4:_self.$padding;if(_self.$padding&&padding!=_self.$padding)_self.setPadding(padding);_self.$theme=module.cssClass;_self.theme=module;dom.addCssClass(_self.container,module.cssClass);dom.setCssClass(_self.container,"ace_dark",module.isDark);if(_self.$size){_self.$size.width=0;_self.$updateSizeAsync();}_self._dispatchEvent('themeLoaded',{theme:module});cb&&cb();}};this.getTheme=function(){return this.$themeId;};this.setStyle=function(style,include){dom.setCssClass(this.container,style,include!==false);};this.unsetStyle=function(style){dom.removeCssClass(this.container,style);};this.setCursorStyle=function(style){if(this.scroller.style.cursor!=style)this.scroller.style.cursor=style;};this.setMouseCursor=function(cursorStyle){this.scroller.style.cursor=cursorStyle;};this.destroy=function(){this.$textLayer.destroy();this.$cursorLayer.destroy();};}).call(VirtualRenderer.prototype);config.defineOptions(VirtualRenderer.prototype,"renderer",{animatedScroll:{initialValue:false},showInvisibles:{set:function set(value){if(this.$textLayer.setShowInvisibles(value))this.$loop.schedule(this.CHANGE_TEXT);},initialValue:false},showPrintMargin:{set:function set(){this.$updatePrintMargin();},initialValue:true},printMarginColumn:{set:function set(){this.$updatePrintMargin();},initialValue:80},printMargin:{set:function set(val){if(typeof val=="number")this.$printMarginColumn=val;this.$showPrintMargin=!!val;this.$updatePrintMargin();},get:function get(){return this.$showPrintMargin&&this.$printMarginColumn;}},showGutter:{set:function set(show){this.$gutter.style.display=show?"block":"none";this.$loop.schedule(this.CHANGE_FULL);this.onGutterResize();},initialValue:true},fadeFoldWidgets:{set:function set(show){dom.setCssClass(this.$gutter,"ace_fade-fold-widgets",show);},initialValue:false},showFoldWidgets:{set:function set(show){this.$gutterLayer.setShowFoldWidgets(show);},initialValue:true},showLineNumbers:{set:function set(show){this.$gutterLayer.setShowLineNumbers(show);this.$loop.schedule(this.CHANGE_GUTTER);},initialValue:true},displayIndentGuides:{set:function set(show){if(this.$textLayer.setDisplayIndentGuides(show))this.$loop.schedule(this.CHANGE_TEXT);},initialValue:true},highlightGutterLine:{set:function set(shouldHighlight){if(!this.$gutterLineHighlight){this.$gutterLineHighlight=dom.createElement("div");this.$gutterLineHighlight.className="ace_gutter-active-line";this.$gutter.appendChild(this.$gutterLineHighlight);return;}this.$gutterLineHighlight.style.display=shouldHighlight?"":"none";if(this.$cursorLayer.$pixelPos)this.$updateGutterLineHighlight();},initialValue:false,value:true},hScrollBarAlwaysVisible:{set:function set(val){if(!this.$hScrollBarAlwaysVisible||!this.$horizScroll)this.$loop.schedule(this.CHANGE_SCROLL);},initialValue:false},vScrollBarAlwaysVisible:{set:function set(val){if(!this.$vScrollBarAlwaysVisible||!this.$vScroll)this.$loop.schedule(this.CHANGE_SCROLL);},initialValue:false},fontSize:{set:function set(size){if(typeof size=="number")size=size+"px";this.container.style.fontSize=size;this.updateFontSize();},initialValue:12},fontFamily:{set:function set(name){this.container.style.fontFamily=name;this.updateFontSize();}},maxLines:{set:function set(val){this.updateFull();}},minLines:{set:function set(val){this.updateFull();}},maxPixelHeight:{set:function set(val){this.updateFull();},initialValue:0},scrollPastEnd:{set:function set(val){val=+val||0;if(this.$scrollPastEnd==val)return;this.$scrollPastEnd=val;this.$loop.schedule(this.CHANGE_SCROLL);},initialValue:0,handlesSet:true},fixedWidthGutter:{set:function set(val){this.$gutterLayer.$fixedWidth=!!val;this.$loop.schedule(this.CHANGE_GUTTER);}},theme:{set:function set(val){this.setTheme(val);},get:function get(){return this.$themeId||this.theme;},initialValue:"./theme/textmate",handlesSet:true}});exports.VirtualRenderer=VirtualRenderer;});ace.define("ace/worker/worker_client",["require","exports","module","ace/lib/oop","ace/lib/net","ace/lib/event_emitter","ace/config"],function(acequire,exports,module){"use strict";var oop=acequire("../lib/oop");var net=acequire("../lib/net");var EventEmitter=acequire("../lib/event_emitter").EventEmitter;var config=acequire("../config");var WorkerClient=function WorkerClient(topLevelNamespaces,mod,classname,workerUrl){this.$sendDeltaQueue=this.$sendDeltaQueue.bind(this);this.changeListener=this.changeListener.bind(this);this.onMessage=this.onMessage.bind(this);if(acequire.nameToUrl&&!acequire.toUrl)acequire.toUrl=acequire.nameToUrl;if(config.get("packaged")||!acequire.toUrl){workerUrl=workerUrl||config.moduleUrl(mod.id,"worker");}else{var normalizePath=this.$normalizePath;workerUrl=workerUrl||normalizePath(acequire.toUrl("ace/worker/worker.js",null,"_"));var tlns={};topLevelNamespaces.forEach(function(ns){tlns[ns]=normalizePath(acequire.toUrl(ns,null,"_").replace(/(\.js)?(\?.*)?$/,""));});}try{var workerSrc=mod.src;var Blob=__webpack_require__(41);var blob=new Blob([workerSrc],{type:'application/javascript'});var blobUrl=(window.URL||window.webkitURL).createObjectURL(blob);this.$worker=new Worker(blobUrl);}catch(e){if(e instanceof window.DOMException){var blob=this.$workerBlob(workerUrl);var URL=window.URL||window.webkitURL;var blobURL=URL.createObjectURL(blob);this.$worker=new Worker(blobURL);URL.revokeObjectURL(blobURL);}else{throw e;}}this.$worker.postMessage({init:true,tlns:tlns,module:mod.id,classname:classname});this.callbackId=1;this.callbacks={};this.$worker.onmessage=this.onMessage;};(function(){oop.implement(this,EventEmitter);this.onMessage=function(e){var msg=e.data;switch(msg.type){case"event":this._signal(msg.name,{data:msg.data});break;case"call":var callback=this.callbacks[msg.id];if(callback){callback(msg.data);delete this.callbacks[msg.id];}break;case"error":this.reportError(msg.data);break;case"log":window.console&&console.log&&console.log.apply(console,msg.data);break;}};this.reportError=function(err){window.console&&console.error&&console.error(err);};this.$normalizePath=function(path){return net.qualifyURL(path);};this.terminate=function(){this._signal("terminate",{});this.deltaQueue=null;this.$worker.terminate();this.$worker=null;if(this.$doc)this.$doc.off("change",this.changeListener);this.$doc=null;};this.send=function(cmd,args){this.$worker.postMessage({command:cmd,args:args});};this.call=function(cmd,args,callback){if(callback){var id=this.callbackId++;this.callbacks[id]=callback;args.push(id);}this.send(cmd,args);};this.emit=function(event,data){try{this.$worker.postMessage({event:event,data:{data:data.data}});}catch(ex){console.error(ex.stack);}};this.attachToDocument=function(doc){if(this.$doc)this.terminate();this.$doc=doc;this.call("setValue",[doc.getValue()]);doc.on("change",this.changeListener);};this.changeListener=function(delta){if(!this.deltaQueue){this.deltaQueue=[];setTimeout(this.$sendDeltaQueue,0);}if(delta.action=="insert")this.deltaQueue.push(delta.start,delta.lines);else this.deltaQueue.push(delta.start,delta.end);};this.$sendDeltaQueue=function(){var q=this.deltaQueue;if(!q)return;this.deltaQueue=null;if(q.length>50&&q.length>this.$doc.getLength()>>1){this.call("setValue",[this.$doc.getValue()]);}else this.emit("change",{data:q});};this.$workerBlob=function(workerUrl){var script="importScripts('"+net.qualifyURL(workerUrl)+"');";try{return new Blob([script],{"type":"application/javascript"});}catch(e){// Backwards-compatibility
+if(this.$maxLines&&this.lineHeight>1)this.$autosize();var offset=this.scrollTop%this.lineHeight;var minHeight=size.scrollerHeight+this.lineHeight;var scrollPastEnd=!this.$maxLines&&this.$scrollPastEnd?(size.scrollerHeight-this.lineHeight)*this.$scrollPastEnd:0;maxHeight+=scrollPastEnd;var sm=this.scrollMargin;this.session.setScrollTop(Math.max(-sm.top,Math.min(this.scrollTop,maxHeight-size.scrollerHeight+sm.bottom)));this.session.setScrollLeft(Math.max(-sm.left,Math.min(this.scrollLeft,longestLine+2*this.$padding-size.scrollerWidth+sm.right)));var vScroll=!hideScrollbars&&(this.$vScrollBarAlwaysVisible||size.scrollerHeight-maxHeight+scrollPastEnd<0||this.scrollTop>sm.top);var vScrollChanged=vScrollBefore!==vScroll;if(vScrollChanged){this.$vScroll=vScroll;this.scrollBarV.setVisible(vScroll);}var lineCount=Math.ceil(minHeight/this.lineHeight)-1;var firstRow=Math.max(0,Math.round((this.scrollTop-offset)/this.lineHeight));var lastRow=firstRow+lineCount;var firstRowScreen,firstRowHeight;var lineHeight=this.lineHeight;firstRow=session.screenToDocumentRow(firstRow,0);var foldLine=session.getFoldLine(firstRow);if(foldLine){firstRow=foldLine.start.row;}firstRowScreen=session.documentToScreenRow(firstRow,0);firstRowHeight=session.getRowLength(firstRow)*lineHeight;lastRow=Math.min(session.screenToDocumentRow(lastRow,0),session.getLength()-1);minHeight=size.scrollerHeight+session.getRowLength(lastRow)*lineHeight+firstRowHeight;offset=this.scrollTop-firstRowScreen*lineHeight;var changes=0;if(this.layerConfig.width!=longestLine)changes=this.CHANGE_H_SCROLL;if(hScrollChanged||vScrollChanged){changes=this.$updateCachedSize(true,this.gutterWidth,size.width,size.height);this._signal("scrollbarVisibilityChanged");if(vScrollChanged)longestLine=this.$getLongestLine();}this.layerConfig={width:longestLine,padding:this.$padding,firstRow:firstRow,firstRowScreen:firstRowScreen,lastRow:lastRow,lineHeight:lineHeight,characterWidth:this.characterWidth,minHeight:minHeight,maxHeight:maxHeight,offset:offset,gutterOffset:lineHeight?Math.max(0,Math.ceil((offset+size.height-size.scrollerHeight)/lineHeight)):0,height:this.$size.scrollerHeight};return changes;};this.$updateLines=function(){var firstRow=this.$changedLines.firstRow;var lastRow=this.$changedLines.lastRow;this.$changedLines=null;var layerConfig=this.layerConfig;if(firstRow>layerConfig.lastRow+1){return;}if(lastRow<layerConfig.firstRow){return;}if(lastRow===Infinity){if(this.$showGutter)this.$gutterLayer.update(layerConfig);this.$textLayer.update(layerConfig);return;}this.$textLayer.updateLines(layerConfig,firstRow,lastRow);return true;};this.$getLongestLine=function(){var charCount=this.session.getScreenWidth();if(this.showInvisibles&&!this.session.$useWrapMode)charCount+=1;return Math.max(this.$size.scrollerWidth-2*this.$padding,Math.round(charCount*this.characterWidth));};this.updateFrontMarkers=function(){this.$markerFront.setMarkers(this.session.getMarkers(true));this.$loop.schedule(this.CHANGE_MARKER_FRONT);};this.updateBackMarkers=function(){this.$markerBack.setMarkers(this.session.getMarkers());this.$loop.schedule(this.CHANGE_MARKER_BACK);};this.addGutterDecoration=function(row,className){this.$gutterLayer.addGutterDecoration(row,className);};this.removeGutterDecoration=function(row,className){this.$gutterLayer.removeGutterDecoration(row,className);};this.updateBreakpoints=function(rows){this.$loop.schedule(this.CHANGE_GUTTER);};this.setAnnotations=function(annotations){this.$gutterLayer.setAnnotations(annotations);this.$loop.schedule(this.CHANGE_GUTTER);};this.updateCursor=function(){this.$loop.schedule(this.CHANGE_CURSOR);};this.hideCursor=function(){this.$cursorLayer.hideCursor();};this.showCursor=function(){this.$cursorLayer.showCursor();};this.scrollSelectionIntoView=function(anchor,lead,offset){this.scrollCursorIntoView(anchor,offset);this.scrollCursorIntoView(lead,offset);};this.scrollCursorIntoView=function(cursor,offset,$viewMargin){if(this.$size.scrollerHeight===0)return;var pos=this.$cursorLayer.getPixelPosition(cursor);var left=pos.left;var top=pos.top;var topMargin=$viewMargin&&$viewMargin.top||0;var bottomMargin=$viewMargin&&$viewMargin.bottom||0;var scrollTop=this.$scrollAnimation?this.session.getScrollTop():this.scrollTop;if(scrollTop+topMargin>top){if(offset&&scrollTop+topMargin>top+this.lineHeight)top-=offset*this.$size.scrollerHeight;if(top===0)top=-this.scrollMargin.top;this.session.setScrollTop(top);}else if(scrollTop+this.$size.scrollerHeight-bottomMargin<top+this.lineHeight){if(offset&&scrollTop+this.$size.scrollerHeight-bottomMargin<top-this.lineHeight)top+=offset*this.$size.scrollerHeight;this.session.setScrollTop(top+this.lineHeight-this.$size.scrollerHeight);}var scrollLeft=this.scrollLeft;if(scrollLeft>left){if(left<this.$padding+2*this.layerConfig.characterWidth)left=-this.scrollMargin.left;this.session.setScrollLeft(left);}else if(scrollLeft+this.$size.scrollerWidth<left+this.characterWidth){this.session.setScrollLeft(Math.round(left+this.characterWidth-this.$size.scrollerWidth));}else if(scrollLeft<=this.$padding&&left-scrollLeft<this.characterWidth){this.session.setScrollLeft(0);}};this.getScrollTop=function(){return this.session.getScrollTop();};this.getScrollLeft=function(){return this.session.getScrollLeft();};this.getScrollTopRow=function(){return this.scrollTop/this.lineHeight;};this.getScrollBottomRow=function(){return Math.max(0,Math.floor((this.scrollTop+this.$size.scrollerHeight)/this.lineHeight)-1);};this.scrollToRow=function(row){this.session.setScrollTop(row*this.lineHeight);};this.alignCursor=function(cursor,alignment){if(typeof cursor=="number")cursor={row:cursor,column:0};var pos=this.$cursorLayer.getPixelPosition(cursor);var h=this.$size.scrollerHeight-this.lineHeight;var offset=pos.top-h*(alignment||0);this.session.setScrollTop(offset);return offset;};this.STEPS=8;this.$calcSteps=function(fromValue,toValue){var i=0;var l=this.STEPS;var steps=[];var func=function func(t,x_min,dx){return dx*(Math.pow(t-1,3)+1)+x_min;};for(i=0;i<l;++i){steps.push(func(i/this.STEPS,fromValue,toValue-fromValue));}return steps;};this.scrollToLine=function(line,center,animate,callback){var pos=this.$cursorLayer.getPixelPosition({row:line,column:0});var offset=pos.top;if(center)offset-=this.$size.scrollerHeight/2;var initialScroll=this.scrollTop;this.session.setScrollTop(offset);if(animate!==false)this.animateScrolling(initialScroll,callback);};this.animateScrolling=function(fromValue,callback){var toValue=this.scrollTop;if(!this.$animatedScroll)return;var _self=this;if(fromValue==toValue)return;if(this.$scrollAnimation){var oldSteps=this.$scrollAnimation.steps;if(oldSteps.length){fromValue=oldSteps[0];if(fromValue==toValue)return;}}var steps=_self.$calcSteps(fromValue,toValue);this.$scrollAnimation={from:fromValue,to:toValue,steps:steps};clearInterval(this.$timer);_self.session.setScrollTop(steps.shift());_self.session.$scrollTop=toValue;this.$timer=setInterval(function(){if(steps.length){_self.session.setScrollTop(steps.shift());_self.session.$scrollTop=toValue;}else if(toValue!=null){_self.session.$scrollTop=-1;_self.session.setScrollTop(toValue);toValue=null;}else{_self.$timer=clearInterval(_self.$timer);_self.$scrollAnimation=null;callback&&callback();}},10);};this.scrollToY=function(scrollTop){if(this.scrollTop!==scrollTop){this.$loop.schedule(this.CHANGE_SCROLL);this.scrollTop=scrollTop;}};this.scrollToX=function(scrollLeft){if(this.scrollLeft!==scrollLeft)this.scrollLeft=scrollLeft;this.$loop.schedule(this.CHANGE_H_SCROLL);};this.scrollTo=function(x,y){this.session.setScrollTop(y);this.session.setScrollLeft(y);};this.scrollBy=function(deltaX,deltaY){deltaY&&this.session.setScrollTop(this.session.getScrollTop()+deltaY);deltaX&&this.session.setScrollLeft(this.session.getScrollLeft()+deltaX);};this.isScrollableBy=function(deltaX,deltaY){if(deltaY<0&&this.session.getScrollTop()>=1-this.scrollMargin.top)return true;if(deltaY>0&&this.session.getScrollTop()+this.$size.scrollerHeight-this.layerConfig.maxHeight<-1+this.scrollMargin.bottom)return true;if(deltaX<0&&this.session.getScrollLeft()>=1-this.scrollMargin.left)return true;if(deltaX>0&&this.session.getScrollLeft()+this.$size.scrollerWidth-this.layerConfig.width<-1+this.scrollMargin.right)return true;};this.pixelToScreenCoordinates=function(x,y){var canvasPos=this.scroller.getBoundingClientRect();var offset=(x+this.scrollLeft-canvasPos.left-this.$padding)/this.characterWidth;var row=Math.floor((y+this.scrollTop-canvasPos.top)/this.lineHeight);var col=Math.round(offset);return{row:row,column:col,side:offset-col>0?1:-1};};this.screenToTextCoordinates=function(x,y){var canvasPos=this.scroller.getBoundingClientRect();var col=Math.round((x+this.scrollLeft-canvasPos.left-this.$padding)/this.characterWidth);var row=(y+this.scrollTop-canvasPos.top)/this.lineHeight;return this.session.screenToDocumentPosition(row,Math.max(col,0));};this.textToScreenCoordinates=function(row,column){var canvasPos=this.scroller.getBoundingClientRect();var pos=this.session.documentToScreenPosition(row,column);var x=this.$padding+Math.round(pos.column*this.characterWidth);var y=pos.row*this.lineHeight;return{pageX:canvasPos.left+x-this.scrollLeft,pageY:canvasPos.top+y-this.scrollTop};};this.visualizeFocus=function(){dom.addCssClass(this.container,"ace_focus");};this.visualizeBlur=function(){dom.removeCssClass(this.container,"ace_focus");};this.showComposition=function(position){if(!this.$composition)this.$composition={keepTextAreaAtCursor:this.$keepTextAreaAtCursor,cssText:this.textarea.style.cssText};this.$keepTextAreaAtCursor=true;dom.addCssClass(this.textarea,"ace_composition");this.textarea.style.cssText="";this.$moveTextAreaToCursor();};this.setCompositionText=function(text){this.$moveTextAreaToCursor();};this.hideComposition=function(){if(!this.$composition)return;dom.removeCssClass(this.textarea,"ace_composition");this.$keepTextAreaAtCursor=this.$composition.keepTextAreaAtCursor;this.textarea.style.cssText=this.$composition.cssText;this.$composition=null;};this.setTheme=function(theme,cb){var _self=this;this.$themeId=theme;_self._dispatchEvent('themeChange',{theme:theme});if(!theme||typeof theme=="string"){var moduleName=theme||this.$options.theme.initialValue;config.loadModule(["theme",moduleName],afterLoad);}else{afterLoad(theme);}function afterLoad(module){if(_self.$themeId!=theme)return cb&&cb();if(!module||!module.cssClass)throw new Error("couldn't load module "+theme+" or it didn't call define");dom.importCssString(module.cssText,module.cssClass,_self.container.ownerDocument);if(_self.theme)dom.removeCssClass(_self.container,_self.theme.cssClass);var padding="padding"in module?module.padding:"padding"in(_self.theme||{})?4:_self.$padding;if(_self.$padding&&padding!=_self.$padding)_self.setPadding(padding);_self.$theme=module.cssClass;_self.theme=module;dom.addCssClass(_self.container,module.cssClass);dom.setCssClass(_self.container,"ace_dark",module.isDark);if(_self.$size){_self.$size.width=0;_self.$updateSizeAsync();}_self._dispatchEvent('themeLoaded',{theme:module});cb&&cb();}};this.getTheme=function(){return this.$themeId;};this.setStyle=function(style,include){dom.setCssClass(this.container,style,include!==false);};this.unsetStyle=function(style){dom.removeCssClass(this.container,style);};this.setCursorStyle=function(style){if(this.scroller.style.cursor!=style)this.scroller.style.cursor=style;};this.setMouseCursor=function(cursorStyle){this.scroller.style.cursor=cursorStyle;};this.destroy=function(){this.$textLayer.destroy();this.$cursorLayer.destroy();};}).call(VirtualRenderer.prototype);config.defineOptions(VirtualRenderer.prototype,"renderer",{animatedScroll:{initialValue:false},showInvisibles:{set:function set(value){if(this.$textLayer.setShowInvisibles(value))this.$loop.schedule(this.CHANGE_TEXT);},initialValue:false},showPrintMargin:{set:function set(){this.$updatePrintMargin();},initialValue:true},printMarginColumn:{set:function set(){this.$updatePrintMargin();},initialValue:80},printMargin:{set:function set(val){if(typeof val=="number")this.$printMarginColumn=val;this.$showPrintMargin=!!val;this.$updatePrintMargin();},get:function get(){return this.$showPrintMargin&&this.$printMarginColumn;}},showGutter:{set:function set(show){this.$gutter.style.display=show?"block":"none";this.$loop.schedule(this.CHANGE_FULL);this.onGutterResize();},initialValue:true},fadeFoldWidgets:{set:function set(show){dom.setCssClass(this.$gutter,"ace_fade-fold-widgets",show);},initialValue:false},showFoldWidgets:{set:function set(show){this.$gutterLayer.setShowFoldWidgets(show);},initialValue:true},showLineNumbers:{set:function set(show){this.$gutterLayer.setShowLineNumbers(show);this.$loop.schedule(this.CHANGE_GUTTER);},initialValue:true},displayIndentGuides:{set:function set(show){if(this.$textLayer.setDisplayIndentGuides(show))this.$loop.schedule(this.CHANGE_TEXT);},initialValue:true},highlightGutterLine:{set:function set(shouldHighlight){if(!this.$gutterLineHighlight){this.$gutterLineHighlight=dom.createElement("div");this.$gutterLineHighlight.className="ace_gutter-active-line";this.$gutter.appendChild(this.$gutterLineHighlight);return;}this.$gutterLineHighlight.style.display=shouldHighlight?"":"none";if(this.$cursorLayer.$pixelPos)this.$updateGutterLineHighlight();},initialValue:false,value:true},hScrollBarAlwaysVisible:{set:function set(val){if(!this.$hScrollBarAlwaysVisible||!this.$horizScroll)this.$loop.schedule(this.CHANGE_SCROLL);},initialValue:false},vScrollBarAlwaysVisible:{set:function set(val){if(!this.$vScrollBarAlwaysVisible||!this.$vScroll)this.$loop.schedule(this.CHANGE_SCROLL);},initialValue:false},fontSize:{set:function set(size){if(typeof size=="number")size=size+"px";this.container.style.fontSize=size;this.updateFontSize();},initialValue:12},fontFamily:{set:function set(name){this.container.style.fontFamily=name;this.updateFontSize();}},maxLines:{set:function set(val){this.updateFull();}},minLines:{set:function set(val){this.updateFull();}},maxPixelHeight:{set:function set(val){this.updateFull();},initialValue:0},scrollPastEnd:{set:function set(val){val=+val||0;if(this.$scrollPastEnd==val)return;this.$scrollPastEnd=val;this.$loop.schedule(this.CHANGE_SCROLL);},initialValue:0,handlesSet:true},fixedWidthGutter:{set:function set(val){this.$gutterLayer.$fixedWidth=!!val;this.$loop.schedule(this.CHANGE_GUTTER);}},theme:{set:function set(val){this.setTheme(val);},get:function get(){return this.$themeId||this.theme;},initialValue:"./theme/textmate",handlesSet:true}});exports.VirtualRenderer=VirtualRenderer;});ace.define("ace/worker/worker_client",["require","exports","module","ace/lib/oop","ace/lib/net","ace/lib/event_emitter","ace/config"],function(acequire,exports,module){"use strict";var oop=acequire("../lib/oop");var net=acequire("../lib/net");var EventEmitter=acequire("../lib/event_emitter").EventEmitter;var config=acequire("../config");var WorkerClient=function WorkerClient(topLevelNamespaces,mod,classname,workerUrl){this.$sendDeltaQueue=this.$sendDeltaQueue.bind(this);this.changeListener=this.changeListener.bind(this);this.onMessage=this.onMessage.bind(this);if(acequire.nameToUrl&&!acequire.toUrl)acequire.toUrl=acequire.nameToUrl;if(config.get("packaged")||!acequire.toUrl){workerUrl=workerUrl||config.moduleUrl(mod.id,"worker");}else{var normalizePath=this.$normalizePath;workerUrl=workerUrl||normalizePath(acequire.toUrl("ace/worker/worker.js",null,"_"));var tlns={};topLevelNamespaces.forEach(function(ns){tlns[ns]=normalizePath(acequire.toUrl(ns,null,"_").replace(/(\.js)?(\?.*)?$/,""));});}try{var workerSrc=mod.src;var Blob=__webpack_require__(39);var blob=new Blob([workerSrc],{type:'application/javascript'});var blobUrl=(window.URL||window.webkitURL).createObjectURL(blob);this.$worker=new Worker(blobUrl);}catch(e){if(e instanceof window.DOMException){var blob=this.$workerBlob(workerUrl);var URL=window.URL||window.webkitURL;var blobURL=URL.createObjectURL(blob);this.$worker=new Worker(blobURL);URL.revokeObjectURL(blobURL);}else{throw e;}}this.$worker.postMessage({init:true,tlns:tlns,module:mod.id,classname:classname});this.callbackId=1;this.callbacks={};this.$worker.onmessage=this.onMessage;};(function(){oop.implement(this,EventEmitter);this.onMessage=function(e){var msg=e.data;switch(msg.type){case"event":this._signal(msg.name,{data:msg.data});break;case"call":var callback=this.callbacks[msg.id];if(callback){callback(msg.data);delete this.callbacks[msg.id];}break;case"error":this.reportError(msg.data);break;case"log":window.console&&console.log&&console.log.apply(console,msg.data);break;}};this.reportError=function(err){window.console&&console.error&&console.error(err);};this.$normalizePath=function(path){return net.qualifyURL(path);};this.terminate=function(){this._signal("terminate",{});this.deltaQueue=null;this.$worker.terminate();this.$worker=null;if(this.$doc)this.$doc.off("change",this.changeListener);this.$doc=null;};this.send=function(cmd,args){this.$worker.postMessage({command:cmd,args:args});};this.call=function(cmd,args,callback){if(callback){var id=this.callbackId++;this.callbacks[id]=callback;args.push(id);}this.send(cmd,args);};this.emit=function(event,data){try{this.$worker.postMessage({event:event,data:{data:data.data}});}catch(ex){console.error(ex.stack);}};this.attachToDocument=function(doc){if(this.$doc)this.terminate();this.$doc=doc;this.call("setValue",[doc.getValue()]);doc.on("change",this.changeListener);};this.changeListener=function(delta){if(!this.deltaQueue){this.deltaQueue=[];setTimeout(this.$sendDeltaQueue,0);}if(delta.action=="insert")this.deltaQueue.push(delta.start,delta.lines);else this.deltaQueue.push(delta.start,delta.end);};this.$sendDeltaQueue=function(){var q=this.deltaQueue;if(!q)return;this.deltaQueue=null;if(q.length>50&&q.length>this.$doc.getLength()>>1){this.call("setValue",[this.$doc.getValue()]);}else this.emit("change",{data:q});};this.$workerBlob=function(workerUrl){var script="importScripts('"+net.qualifyURL(workerUrl)+"');";try{return new Blob([script],{"type":"application/javascript"});}catch(e){// Backwards-compatibility
 var BlobBuilder=window.BlobBuilder||window.WebKitBlobBuilder||window.MozBlobBuilder;var blobBuilder=new BlobBuilder();blobBuilder.append(script);return blobBuilder.getBlob("application/javascript");}};}).call(WorkerClient.prototype);var UIWorkerClient=function UIWorkerClient(topLevelNamespaces,mod,classname){this.$sendDeltaQueue=this.$sendDeltaQueue.bind(this);this.changeListener=this.changeListener.bind(this);this.callbackId=1;this.callbacks={};this.messageBuffer=[];var main=null;var emitSync=false;var sender=Object.create(EventEmitter);var _self=this;this.$worker={};this.$worker.terminate=function(){};this.$worker.postMessage=function(e){_self.messageBuffer.push(e);if(main){if(emitSync)setTimeout(processNext);else processNext();}};this.setEmitSync=function(val){emitSync=val;};var processNext=function processNext(){var msg=_self.messageBuffer.shift();if(msg.command)main[msg.command].apply(main,msg.args);else if(msg.event)sender._signal(msg.event,msg.data);};sender.postMessage=function(msg){_self.onMessage({data:msg});};sender.callback=function(data,callbackId){this.postMessage({type:"call",id:callbackId,data:data});};sender.emit=function(name,data){this.postMessage({type:"event",name:name,data:data});};config.loadModule(["worker",mod],function(Main){main=new Main[classname](sender);while(_self.messageBuffer.length){processNext();}});};UIWorkerClient.prototype=WorkerClient.prototype;exports.UIWorkerClient=UIWorkerClient;exports.WorkerClient=WorkerClient;});ace.define("ace/placeholder",["require","exports","module","ace/range","ace/lib/event_emitter","ace/lib/oop"],function(acequire,exports,module){"use strict";var Range=acequire("./range").Range;var EventEmitter=acequire("./lib/event_emitter").EventEmitter;var oop=acequire("./lib/oop");var PlaceHolder=function PlaceHolder(session,length,pos,others,mainClass,othersClass){var _self=this;this.length=length;this.session=session;this.doc=session.getDocument();this.mainClass=mainClass;this.othersClass=othersClass;this.$onUpdate=this.onUpdate.bind(this);this.doc.on("change",this.$onUpdate);this.$others=others;this.$onCursorChange=function(){setTimeout(function(){_self.onCursorChange();});};this.$pos=pos;var undoStack=session.getUndoManager().$undoStack||session.getUndoManager().$undostack||{length:-1};this.$undoStackDepth=undoStack.length;this.setup();session.selection.on("changeCursor",this.$onCursorChange);};(function(){oop.implement(this,EventEmitter);this.setup=function(){var _self=this;var doc=this.doc;var session=this.session;this.selectionBefore=session.selection.toJSON();if(session.selection.inMultiSelectMode)session.selection.toSingleRange();this.pos=doc.createAnchor(this.$pos.row,this.$pos.column);var pos=this.pos;pos.$insertRight=true;pos.detach();pos.markerId=session.addMarker(new Range(pos.row,pos.column,pos.row,pos.column+this.length),this.mainClass,null,false);this.others=[];this.$others.forEach(function(other){var anchor=doc.createAnchor(other.row,other.column);anchor.$insertRight=true;anchor.detach();_self.others.push(anchor);});session.setUndoSelect(false);};this.showOtherMarkers=function(){if(this.othersActive)return;var session=this.session;var _self=this;this.othersActive=true;this.others.forEach(function(anchor){anchor.markerId=session.addMarker(new Range(anchor.row,anchor.column,anchor.row,anchor.column+_self.length),_self.othersClass,null,false);});};this.hideOtherMarkers=function(){if(!this.othersActive)return;this.othersActive=false;for(var i=0;i<this.others.length;i++){this.session.removeMarker(this.others[i].markerId);}};this.onUpdate=function(delta){if(this.$updating)return this.updateAnchors(delta);var range=delta;if(range.start.row!==range.end.row)return;if(range.start.row!==this.pos.row)return;this.$updating=true;var lengthDiff=delta.action==="insert"?range.end.column-range.start.column:range.start.column-range.end.column;var inMainRange=range.start.column>=this.pos.column&&range.start.column<=this.pos.column+this.length+1;var distanceFromStart=range.start.column-this.pos.column;this.updateAnchors(delta);if(inMainRange)this.length+=lengthDiff;if(inMainRange&&!this.session.$fromUndo){if(delta.action==='insert'){for(var i=this.others.length-1;i>=0;i--){var otherPos=this.others[i];var newPos={row:otherPos.row,column:otherPos.column+distanceFromStart};this.doc.insertMergedLines(newPos,delta.lines);}}else if(delta.action==='remove'){for(var i=this.others.length-1;i>=0;i--){var otherPos=this.others[i];var newPos={row:otherPos.row,column:otherPos.column+distanceFromStart};this.doc.remove(new Range(newPos.row,newPos.column,newPos.row,newPos.column-lengthDiff));}}}this.$updating=false;this.updateMarkers();};this.updateAnchors=function(delta){this.pos.onChange(delta);for(var i=this.others.length;i--;){this.others[i].onChange(delta);}this.updateMarkers();};this.updateMarkers=function(){if(this.$updating)return;var _self=this;var session=this.session;var updateMarker=function updateMarker(pos,className){session.removeMarker(pos.markerId);pos.markerId=session.addMarker(new Range(pos.row,pos.column,pos.row,pos.column+_self.length),className,null,false);};updateMarker(this.pos,this.mainClass);for(var i=this.others.length;i--;){updateMarker(this.others[i],this.othersClass);}};this.onCursorChange=function(event){if(this.$updating||!this.session)return;var pos=this.session.selection.getCursor();if(pos.row===this.pos.row&&pos.column>=this.pos.column&&pos.column<=this.pos.column+this.length){this.showOtherMarkers();this._emit("cursorEnter",event);}else{this.hideOtherMarkers();this._emit("cursorLeave",event);}};this.detach=function(){this.session.removeMarker(this.pos&&this.pos.markerId);this.hideOtherMarkers();this.doc.removeEventListener("change",this.$onUpdate);this.session.selection.removeEventListener("changeCursor",this.$onCursorChange);this.session.setUndoSelect(true);this.session=null;};this.cancel=function(){if(this.$undoStackDepth===-1)return;var undoManager=this.session.getUndoManager();var undosRequired=(undoManager.$undoStack||undoManager.$undostack).length-this.$undoStackDepth;for(var i=0;i<undosRequired;i++){undoManager.undo(true);}if(this.selectionBefore)this.session.selection.fromJSON(this.selectionBefore);};}).call(PlaceHolder.prototype);exports.PlaceHolder=PlaceHolder;});ace.define("ace/mouse/multi_select_handler",["require","exports","module","ace/lib/event","ace/lib/useragent"],function(acequire,exports,module){var event=acequire("../lib/event");var useragent=acequire("../lib/useragent");function isSamePoint(p1,p2){return p1.row==p2.row&&p1.column==p2.column;}function onMouseDown(e){var ev=e.domEvent;var alt=ev.altKey;var shift=ev.shiftKey;var ctrl=ev.ctrlKey;var accel=e.getAccelKey();var button=e.getButton();if(ctrl&&useragent.isMac)button=ev.button;if(e.editor.inMultiSelectMode&&button==2){e.editor.textInput.onContextMenu(e.domEvent);return;}if(!ctrl&&!alt&&!accel){if(button===0&&e.editor.inMultiSelectMode)e.editor.exitMultiSelectMode();return;}if(button!==0)return;var editor=e.editor;var selection=editor.selection;var isMultiSelect=editor.inMultiSelectMode;var pos=e.getDocumentPosition();var cursor=selection.getCursor();var inSelection=e.inSelection()||selection.isEmpty()&&isSamePoint(pos,cursor);var mouseX=e.x,mouseY=e.y;var onMouseSelection=function onMouseSelection(e){mouseX=e.clientX;mouseY=e.clientY;};var session=editor.session;var screenAnchor=editor.renderer.pixelToScreenCoordinates(mouseX,mouseY);var screenCursor=screenAnchor;var selectionMode;if(editor.$mouseHandler.$enableJumpToDef){if(ctrl&&alt||accel&&alt)selectionMode=shift?"block":"add";else if(alt&&editor.$blockSelectEnabled)selectionMode="block";}else{if(accel&&!alt){selectionMode="add";if(!isMultiSelect&&shift)return;}else if(alt&&editor.$blockSelectEnabled){selectionMode="block";}}if(selectionMode&&useragent.isMac&&ev.ctrlKey){editor.$mouseHandler.cancelContextMenu();}if(selectionMode=="add"){if(!isMultiSelect&&inSelection)return;// dragging
 if(!isMultiSelect){var range=selection.toOrientedRange();editor.addSelectionMarker(range);}var oldRange=selection.rangeList.rangeAtPoint(pos);editor.$blockScrolling++;editor.inVirtualSelectionMode=true;if(shift){oldRange=null;range=selection.ranges[0]||range;editor.removeSelectionMarker(range);}editor.once("mouseup",function(){var tmpSel=selection.toOrientedRange();if(oldRange&&tmpSel.isEmpty()&&isSamePoint(oldRange.cursor,tmpSel.cursor))selection.substractPoint(tmpSel.cursor);else{if(shift){selection.substractPoint(range.cursor);}else if(range){editor.removeSelectionMarker(range);selection.addRange(range);}selection.addRange(tmpSel);}editor.$blockScrolling--;editor.inVirtualSelectionMode=false;});}else if(selectionMode=="block"){e.stop();editor.inVirtualSelectionMode=true;var initialRange;var rectSel=[];var blockSelect=function blockSelect(){var newCursor=editor.renderer.pixelToScreenCoordinates(mouseX,mouseY);var cursor=session.screenToDocumentPosition(newCursor.row,newCursor.column);if(isSamePoint(screenCursor,newCursor)&&isSamePoint(cursor,selection.lead))return;screenCursor=newCursor;editor.$blockScrolling++;editor.selection.moveToPosition(cursor);editor.renderer.scrollCursorIntoView();editor.removeSelectionMarkers(rectSel);rectSel=selection.rectangularRangeBlock(screenCursor,screenAnchor);if(editor.$mouseHandler.$clickSelection&&rectSel.length==1&&rectSel[0].isEmpty())rectSel[0]=editor.$mouseHandler.$clickSelection.clone();rectSel.forEach(editor.addSelectionMarker,editor);editor.updateSelectionMarkers();editor.$blockScrolling--;};editor.$blockScrolling++;if(isMultiSelect&&!accel){selection.toSingleRange();}else if(!isMultiSelect&&accel){initialRange=selection.toOrientedRange();editor.addSelectionMarker(initialRange);}if(shift)screenAnchor=session.documentToScreenPosition(selection.lead);else selection.moveToPosition(pos);editor.$blockScrolling--;screenCursor={row:-1,column:-1};var onMouseSelectionEnd=function onMouseSelectionEnd(e){clearInterval(timerId);editor.removeSelectionMarkers(rectSel);if(!rectSel.length)rectSel=[selection.toOrientedRange()];editor.$blockScrolling++;if(initialRange){editor.removeSelectionMarker(initialRange);selection.toSingleRange(initialRange);}for(var i=0;i<rectSel.length;i++){selection.addRange(rectSel[i]);}editor.inVirtualSelectionMode=false;editor.$mouseHandler.$clickSelection=null;editor.$blockScrolling--;};var onSelectionInterval=blockSelect;event.capture(editor.container,onMouseSelection,onMouseSelectionEnd);var timerId=setInterval(function(){onSelectionInterval();},20);return e.preventDefault();}}exports.onMouseDown=onMouseDown;});ace.define("ace/commands/multi_select_commands",["require","exports","module","ace/keyboard/hash_handler"],function(acequire,exports,module){exports.defaultCommands=[{name:"addCursorAbove",exec:function exec(editor){editor.selectMoreLines(-1);},bindKey:{win:"Ctrl-Alt-Up",mac:"Ctrl-Alt-Up"},scrollIntoView:"cursor",readOnly:true},{name:"addCursorBelow",exec:function exec(editor){editor.selectMoreLines(1);},bindKey:{win:"Ctrl-Alt-Down",mac:"Ctrl-Alt-Down"},scrollIntoView:"cursor",readOnly:true},{name:"addCursorAboveSkipCurrent",exec:function exec(editor){editor.selectMoreLines(-1,true);},bindKey:{win:"Ctrl-Alt-Shift-Up",mac:"Ctrl-Alt-Shift-Up"},scrollIntoView:"cursor",readOnly:true},{name:"addCursorBelowSkipCurrent",exec:function exec(editor){editor.selectMoreLines(1,true);},bindKey:{win:"Ctrl-Alt-Shift-Down",mac:"Ctrl-Alt-Shift-Down"},scrollIntoView:"cursor",readOnly:true},{name:"selectMoreBefore",exec:function exec(editor){editor.selectMore(-1);},bindKey:{win:"Ctrl-Alt-Left",mac:"Ctrl-Alt-Left"},scrollIntoView:"cursor",readOnly:true},{name:"selectMoreAfter",exec:function exec(editor){editor.selectMore(1);},bindKey:{win:"Ctrl-Alt-Right",mac:"Ctrl-Alt-Right"},scrollIntoView:"cursor",readOnly:true},{name:"selectNextBefore",exec:function exec(editor){editor.selectMore(-1,true);},bindKey:{win:"Ctrl-Alt-Shift-Left",mac:"Ctrl-Alt-Shift-Left"},scrollIntoView:"cursor",readOnly:true},{name:"selectNextAfter",exec:function exec(editor){editor.selectMore(1,true);},bindKey:{win:"Ctrl-Alt-Shift-Right",mac:"Ctrl-Alt-Shift-Right"},scrollIntoView:"cursor",readOnly:true},{name:"splitIntoLines",exec:function exec(editor){editor.multiSelect.splitIntoLines();},bindKey:{win:"Ctrl-Alt-L",mac:"Ctrl-Alt-L"},readOnly:true},{name:"alignCursors",exec:function exec(editor){editor.alignCursors();},bindKey:{win:"Ctrl-Alt-A",mac:"Ctrl-Alt-A"},scrollIntoView:"cursor"},{name:"findAll",exec:function exec(editor){editor.findAll();},bindKey:{win:"Ctrl-Alt-K",mac:"Ctrl-Alt-G"},scrollIntoView:"cursor",readOnly:true}];exports.multiSelectCommands=[{name:"singleSelection",bindKey:"esc",exec:function exec(editor){editor.exitMultiSelectMode();},scrollIntoView:"cursor",readOnly:true,isAvailable:function isAvailable(editor){return editor&&editor.inMultiSelectMode;}}];var HashHandler=acequire("../keyboard/hash_handler").HashHandler;exports.keyboardHandler=new HashHandler(exports.multiSelectCommands);});ace.define("ace/multi_select",["require","exports","module","ace/range_list","ace/range","ace/selection","ace/mouse/multi_select_handler","ace/lib/event","ace/lib/lang","ace/commands/multi_select_commands","ace/search","ace/edit_session","ace/editor","ace/config"],function(acequire,exports,module){var RangeList=acequire("./range_list").RangeList;var Range=acequire("./range").Range;var Selection=acequire("./selection").Selection;var onMouseDown=acequire("./mouse/multi_select_handler").onMouseDown;var event=acequire("./lib/event");var lang=acequire("./lib/lang");var commands=acequire("./commands/multi_select_commands");exports.commands=commands.defaultCommands.concat(commands.multiSelectCommands);var Search=acequire("./search").Search;var search=new Search();function find(session,needle,dir){search.$options.wrap=true;search.$options.needle=needle;search.$options.backwards=dir==-1;return search.find(session);}var EditSession=acequire("./edit_session").EditSession;(function(){this.getSelectionMarkers=function(){return this.$selectionMarkers;};}).call(EditSession.prototype);(function(){this.ranges=null;this.rangeList=null;this.addRange=function(range,$blockChangeEvents){if(!range)return;if(!this.inMultiSelectMode&&this.rangeCount===0){var oldRange=this.toOrientedRange();this.rangeList.add(oldRange);this.rangeList.add(range);if(this.rangeList.ranges.length!=2){this.rangeList.removeAll();return $blockChangeEvents||this.fromOrientedRange(range);}this.rangeList.removeAll();this.rangeList.add(oldRange);this.$onAddRange(oldRange);}if(!range.cursor)range.cursor=range.end;var removed=this.rangeList.add(range);this.$onAddRange(range);if(removed.length)this.$onRemoveRange(removed);if(this.rangeCount>1&&!this.inMultiSelectMode){this._signal("multiSelect");this.inMultiSelectMode=true;this.session.$undoSelect=false;this.rangeList.attach(this.session);}return $blockChangeEvents||this.fromOrientedRange(range);};this.toSingleRange=function(range){range=range||this.ranges[0];var removed=this.rangeList.removeAll();if(removed.length)this.$onRemoveRange(removed);range&&this.fromOrientedRange(range);};this.substractPoint=function(pos){var removed=this.rangeList.substractPoint(pos);if(removed){this.$onRemoveRange(removed);return removed[0];}};this.mergeOverlappingRanges=function(){var removed=this.rangeList.merge();if(removed.length)this.$onRemoveRange(removed);else if(this.ranges[0])this.fromOrientedRange(this.ranges[0]);};this.$onAddRange=function(range){this.rangeCount=this.rangeList.ranges.length;this.ranges.unshift(range);this._signal("addRange",{range:range});};this.$onRemoveRange=function(removed){this.rangeCount=this.rangeList.ranges.length;if(this.rangeCount==1&&this.inMultiSelectMode){var lastRange=this.rangeList.ranges.pop();removed.push(lastRange);this.rangeCount=0;}for(var i=removed.length;i--;){var index=this.ranges.indexOf(removed[i]);this.ranges.splice(index,1);}this._signal("removeRange",{ranges:removed});if(this.rangeCount===0&&this.inMultiSelectMode){this.inMultiSelectMode=false;this._signal("singleSelect");this.session.$undoSelect=true;this.rangeList.detach(this.session);}lastRange=lastRange||this.ranges[0];if(lastRange&&!lastRange.isEqual(this.getRange()))this.fromOrientedRange(lastRange);};this.$initRangeList=function(){if(this.rangeList)return;this.rangeList=new RangeList();this.ranges=[];this.rangeCount=0;};this.getAllRanges=function(){return this.rangeCount?this.rangeList.ranges.concat():[this.getRange()];};this.splitIntoLines=function(){if(this.rangeCount>1){var ranges=this.rangeList.ranges;var lastRange=ranges[ranges.length-1];var range=Range.fromPoints(ranges[0].start,lastRange.end);this.toSingleRange();this.setSelectionRange(range,lastRange.cursor==lastRange.start);}else{var range=this.getRange();var isBackwards=this.isBackwards();var startRow=range.start.row;var endRow=range.end.row;if(startRow==endRow){if(isBackwards)var start=range.end,end=range.start;else var start=range.start,end=range.end;this.addRange(Range.fromPoints(end,end));this.addRange(Range.fromPoints(start,start));return;}var rectSel=[];var r=this.getLineRange(startRow,true);r.start.column=range.start.column;rectSel.push(r);for(var i=startRow+1;i<endRow;i++){rectSel.push(this.getLineRange(i,true));}r=this.getLineRange(endRow,true);r.end.column=range.end.column;rectSel.push(r);rectSel.forEach(this.addRange,this);}};this.toggleBlockSelection=function(){if(this.rangeCount>1){var ranges=this.rangeList.ranges;var lastRange=ranges[ranges.length-1];var range=Range.fromPoints(ranges[0].start,lastRange.end);this.toSingleRange();this.setSelectionRange(range,lastRange.cursor==lastRange.start);}else{var cursor=this.session.documentToScreenPosition(this.selectionLead);var anchor=this.session.documentToScreenPosition(this.selectionAnchor);var rectSel=this.rectangularRangeBlock(cursor,anchor);rectSel.forEach(this.addRange,this);}};this.rectangularRangeBlock=function(screenCursor,screenAnchor,includeEmptyLines){var rectSel=[];var xBackwards=screenCursor.column<screenAnchor.column;if(xBackwards){var startColumn=screenCursor.column;var endColumn=screenAnchor.column;}else{var startColumn=screenAnchor.column;var endColumn=screenCursor.column;}var yBackwards=screenCursor.row<screenAnchor.row;if(yBackwards){var startRow=screenCursor.row;var endRow=screenAnchor.row;}else{var startRow=screenAnchor.row;var endRow=screenCursor.row;}if(startColumn<0)startColumn=0;if(startRow<0)startRow=0;if(startRow==endRow)includeEmptyLines=true;for(var row=startRow;row<=endRow;row++){var range=Range.fromPoints(this.session.screenToDocumentPosition(row,startColumn),this.session.screenToDocumentPosition(row,endColumn));if(range.isEmpty()){if(docEnd&&isSamePoint(range.end,docEnd))break;var docEnd=range.end;}range.cursor=xBackwards?range.start:range.end;rectSel.push(range);}if(yBackwards)rectSel.reverse();if(!includeEmptyLines){var end=rectSel.length-1;while(rectSel[end].isEmpty()&&end>0){end--;}if(end>0){var start=0;while(rectSel[start].isEmpty()){start++;}}for(var i=end;i>=start;i--){if(rectSel[i].isEmpty())rectSel.splice(i,1);}}return rectSel;};}).call(Selection.prototype);var Editor=acequire("./editor").Editor;(function(){this.updateSelectionMarkers=function(){this.renderer.updateCursor();this.renderer.updateBackMarkers();};this.addSelectionMarker=function(orientedRange){if(!orientedRange.cursor)orientedRange.cursor=orientedRange.end;var style=this.getSelectionStyle();orientedRange.marker=this.session.addMarker(orientedRange,"ace_selection",style);this.session.$selectionMarkers.push(orientedRange);this.session.selectionMarkerCount=this.session.$selectionMarkers.length;return orientedRange;};this.removeSelectionMarker=function(range){if(!range.marker)return;this.session.removeMarker(range.marker);var index=this.session.$selectionMarkers.indexOf(range);if(index!=-1)this.session.$selectionMarkers.splice(index,1);this.session.selectionMarkerCount=this.session.$selectionMarkers.length;};this.removeSelectionMarkers=function(ranges){var markerList=this.session.$selectionMarkers;for(var i=ranges.length;i--;){var range=ranges[i];if(!range.marker)continue;this.session.removeMarker(range.marker);var index=markerList.indexOf(range);if(index!=-1)markerList.splice(index,1);}this.session.selectionMarkerCount=markerList.length;};this.$onAddRange=function(e){this.addSelectionMarker(e.range);this.renderer.updateCursor();this.renderer.updateBackMarkers();};this.$onRemoveRange=function(e){this.removeSelectionMarkers(e.ranges);this.renderer.updateCursor();this.renderer.updateBackMarkers();};this.$onMultiSelect=function(e){if(this.inMultiSelectMode)return;this.inMultiSelectMode=true;this.setStyle("ace_multiselect");this.keyBinding.addKeyboardHandler(commands.keyboardHandler);this.commands.setDefaultHandler("exec",this.$onMultiSelectExec);this.renderer.updateCursor();this.renderer.updateBackMarkers();};this.$onSingleSelect=function(e){if(this.session.multiSelect.inVirtualMode)return;this.inMultiSelectMode=false;this.unsetStyle("ace_multiselect");this.keyBinding.removeKeyboardHandler(commands.keyboardHandler);this.commands.removeDefaultHandler("exec",this.$onMultiSelectExec);this.renderer.updateCursor();this.renderer.updateBackMarkers();this._emit("changeSelection");};this.$onMultiSelectExec=function(e){var command=e.command;var editor=e.editor;if(!editor.multiSelect)return;if(!command.multiSelectAction){var result=command.exec(editor,e.args||{});editor.multiSelect.addRange(editor.multiSelect.toOrientedRange());editor.multiSelect.mergeOverlappingRanges();}else if(command.multiSelectAction=="forEach"){result=editor.forEachSelection(command,e.args);}else if(command.multiSelectAction=="forEachLine"){result=editor.forEachSelection(command,e.args,true);}else if(command.multiSelectAction=="single"){editor.exitMultiSelectMode();result=command.exec(editor,e.args||{});}else{result=command.multiSelectAction(editor,e.args||{});}return result;};this.forEachSelection=function(cmd,args,options){if(this.inVirtualSelectionMode)return;var keepOrder=options&&options.keepOrder;var $byLines=options==true||options&&options.$byLines;var session=this.session;var selection=this.selection;var rangeList=selection.rangeList;var ranges=(keepOrder?selection:rangeList).ranges;var result;if(!ranges.length)return cmd.exec?cmd.exec(this,args||{}):cmd(this,args||{});var reg=selection._eventRegistry;selection._eventRegistry={};var tmpSel=new Selection(session);this.inVirtualSelectionMode=true;for(var i=ranges.length;i--;){if($byLines){while(i>0&&ranges[i].start.row==ranges[i-1].end.row){i--;}}tmpSel.fromOrientedRange(ranges[i]);tmpSel.index=i;this.selection=session.selection=tmpSel;var cmdResult=cmd.exec?cmd.exec(this,args||{}):cmd(this,args||{});if(!result&&cmdResult!==undefined)result=cmdResult;tmpSel.toOrientedRange(ranges[i]);}tmpSel.detach();this.selection=session.selection=selection;this.inVirtualSelectionMode=false;selection._eventRegistry=reg;selection.mergeOverlappingRanges();var anim=this.renderer.$scrollAnimation;this.onCursorChange();this.onSelectionChange();if(anim&&anim.from==anim.to)this.renderer.animateScrolling(anim.from);return result;};this.exitMultiSelectMode=function(){if(!this.inMultiSelectMode||this.inVirtualSelectionMode)return;this.multiSelect.toSingleRange();};this.getSelectedText=function(){var text="";if(this.inMultiSelectMode&&!this.inVirtualSelectionMode){var ranges=this.multiSelect.rangeList.ranges;var buf=[];for(var i=0;i<ranges.length;i++){buf.push(this.session.getTextRange(ranges[i]));}var nl=this.session.getDocument().getNewLineCharacter();text=buf.join(nl);if(text.length==(buf.length-1)*nl.length)text="";}else if(!this.selection.isEmpty()){text=this.session.getTextRange(this.getSelectionRange());}return text;};this.$checkMultiselectChange=function(e,anchor){if(this.inMultiSelectMode&&!this.inVirtualSelectionMode){var range=this.multiSelect.ranges[0];if(this.multiSelect.isEmpty()&&anchor==this.multiSelect.anchor)return;var pos=anchor==this.multiSelect.anchor?range.cursor==range.start?range.end:range.start:range.cursor;if(pos.row!=anchor.row||this.session.$clipPositionToDocument(pos.row,pos.column).column!=anchor.column)this.multiSelect.toSingleRange(this.multiSelect.toOrientedRange());}};this.findAll=function(needle,options,additive){options=options||{};options.needle=needle||options.needle;if(options.needle==undefined){var range=this.selection.isEmpty()?this.selection.getWordRange():this.selection.getRange();options.needle=this.session.getTextRange(range);}this.$search.set(options);var ranges=this.$search.findAll(this.session);if(!ranges.length)return 0;this.$blockScrolling+=1;var selection=this.multiSelect;if(!additive)selection.toSingleRange(ranges[0]);for(var i=ranges.length;i--;){selection.addRange(ranges[i],true);}if(range&&selection.rangeList.rangeAtPoint(range.start))selection.addRange(range,true);this.$blockScrolling-=1;return ranges.length;};this.selectMoreLines=function(dir,skip){var range=this.selection.toOrientedRange();var isBackwards=range.cursor==range.end;var screenLead=this.session.documentToScreenPosition(range.cursor);if(this.selection.$desiredColumn)screenLead.column=this.selection.$desiredColumn;var lead=this.session.screenToDocumentPosition(screenLead.row+dir,screenLead.column);if(!range.isEmpty()){var screenAnchor=this.session.documentToScreenPosition(isBackwards?range.end:range.start);var anchor=this.session.screenToDocumentPosition(screenAnchor.row+dir,screenAnchor.column);}else{var anchor=lead;}if(isBackwards){var newRange=Range.fromPoints(lead,anchor);newRange.cursor=newRange.start;}else{var newRange=Range.fromPoints(anchor,lead);newRange.cursor=newRange.end;}newRange.desiredColumn=screenLead.column;if(!this.selection.inMultiSelectMode){this.selection.addRange(range);}else{if(skip)var toRemove=range.cursor;}this.selection.addRange(newRange);if(toRemove)this.selection.substractPoint(toRemove);};this.transposeSelections=function(dir){var session=this.session;var sel=session.multiSelect;var all=sel.ranges;for(var i=all.length;i--;){var range=all[i];if(range.isEmpty()){var tmp=session.getWordRange(range.start.row,range.start.column);range.start.row=tmp.start.row;range.start.column=tmp.start.column;range.end.row=tmp.end.row;range.end.column=tmp.end.column;}}sel.mergeOverlappingRanges();var words=[];for(var i=all.length;i--;){var range=all[i];words.unshift(session.getTextRange(range));}if(dir<0)words.unshift(words.pop());else words.push(words.shift());for(var i=all.length;i--;){var range=all[i];var tmp=range.clone();session.replace(range,words[i]);range.start.row=tmp.start.row;range.start.column=tmp.start.column;}};this.selectMore=function(dir,skip,stopAtFirst){var session=this.session;var sel=session.multiSelect;var range=sel.toOrientedRange();if(range.isEmpty()){range=session.getWordRange(range.start.row,range.start.column);range.cursor=dir==-1?range.start:range.end;this.multiSelect.addRange(range);if(stopAtFirst)return;}var needle=session.getTextRange(range);var newRange=find(session,needle,dir);if(newRange){newRange.cursor=dir==-1?newRange.start:newRange.end;this.$blockScrolling+=1;this.session.unfold(newRange);this.multiSelect.addRange(newRange);this.$blockScrolling-=1;this.renderer.scrollCursorIntoView(null,0.5);}if(skip)this.multiSelect.substractPoint(range.cursor);};this.alignCursors=function(){var session=this.session;var sel=session.multiSelect;var ranges=sel.ranges;var row=-1;var sameRowRanges=ranges.filter(function(r){if(r.cursor.row==row)return true;row=r.cursor.row;});if(!ranges.length||sameRowRanges.length==ranges.length-1){var range=this.selection.getRange();var fr=range.start.row,lr=range.end.row;var guessRange=fr==lr;if(guessRange){var max=this.session.getLength();var line;do{line=this.session.getLine(lr);}while(/[=:]/.test(line)&&++lr<max);do{line=this.session.getLine(fr);}while(/[=:]/.test(line)&&--fr>0);if(fr<0)fr=0;if(lr>=max)lr=max-1;}var lines=this.session.removeFullLines(fr,lr);lines=this.$reAlignText(lines,guessRange);this.session.insert({row:fr,column:0},lines.join("\n")+"\n");if(!guessRange){range.start.column=0;range.end.column=lines[lines.length-1].length;}this.selection.setRange(range);}else{sameRowRanges.forEach(function(r){sel.substractPoint(r.cursor);});var maxCol=0;var minSpace=Infinity;var spaceOffsets=ranges.map(function(r){var p=r.cursor;var line=session.getLine(p.row);var spaceOffset=line.substr(p.column).search(/\S/g);if(spaceOffset==-1)spaceOffset=0;if(p.column>maxCol)maxCol=p.column;if(spaceOffset<minSpace)minSpace=spaceOffset;return spaceOffset;});ranges.forEach(function(r,i){var p=r.cursor;var l=maxCol-p.column;var d=spaceOffsets[i]-minSpace;if(l>d)session.insert(p,lang.stringRepeat(" ",l-d));else session.remove(new Range(p.row,p.column,p.row,p.column-l+d));r.start.column=r.end.column=maxCol;r.start.row=r.end.row=p.row;r.cursor=r.end;});sel.fromOrientedRange(ranges[0]);this.renderer.updateCursor();this.renderer.updateBackMarkers();}};this.$reAlignText=function(lines,forceLeft){var isLeftAligned=true,isRightAligned=true;var startW,textW,endW;return lines.map(function(line){var m=line.match(/(\s*)(.*?)(\s*)([=:].*)/);if(!m)return[line];if(startW==null){startW=m[1].length;textW=m[2].length;endW=m[3].length;return m;}if(startW+textW+endW!=m[1].length+m[2].length+m[3].length)isRightAligned=false;if(startW!=m[1].length)isLeftAligned=false;if(startW>m[1].length)startW=m[1].length;if(textW<m[2].length)textW=m[2].length;if(endW>m[3].length)endW=m[3].length;return m;}).map(forceLeft?alignLeft:isLeftAligned?isRightAligned?alignRight:alignLeft:unAlign);function spaces(n){return lang.stringRepeat(" ",n);}function alignLeft(m){return!m[2]?m[0]:spaces(startW)+m[2]+spaces(textW-m[2].length+endW)+m[4].replace(/^([=:])\s+/,"$1 ");}function alignRight(m){return!m[2]?m[0]:spaces(startW+textW-m[2].length)+m[2]+spaces(endW," ")+m[4].replace(/^([=:])\s+/,"$1 ");}function unAlign(m){return!m[2]?m[0]:spaces(startW)+m[2]+spaces(endW)+m[4].replace(/^([=:])\s+/,"$1 ");}};}).call(Editor.prototype);function isSamePoint(p1,p2){return p1.row==p2.row&&p1.column==p2.column;}exports.onSessionChange=function(e){var session=e.session;if(session&&!session.multiSelect){session.$selectionMarkers=[];session.selection.$initRangeList();session.multiSelect=session.selection;}this.multiSelect=session&&session.multiSelect;var oldSession=e.oldSession;if(oldSession){oldSession.multiSelect.off("addRange",this.$onAddRange);oldSession.multiSelect.off("removeRange",this.$onRemoveRange);oldSession.multiSelect.off("multiSelect",this.$onMultiSelect);oldSession.multiSelect.off("singleSelect",this.$onSingleSelect);oldSession.multiSelect.lead.off("change",this.$checkMultiselectChange);oldSession.multiSelect.anchor.off("change",this.$checkMultiselectChange);}if(session){session.multiSelect.on("addRange",this.$onAddRange);session.multiSelect.on("removeRange",this.$onRemoveRange);session.multiSelect.on("multiSelect",this.$onMultiSelect);session.multiSelect.on("singleSelect",this.$onSingleSelect);session.multiSelect.lead.on("change",this.$checkMultiselectChange);session.multiSelect.anchor.on("change",this.$checkMultiselectChange);}if(session&&this.inMultiSelectMode!=session.selection.inMultiSelectMode){if(session.selection.inMultiSelectMode)this.$onMultiSelect();else this.$onSingleSelect();}};function MultiSelect(editor){if(editor.$multiselectOnSessionChange)return;editor.$onAddRange=editor.$onAddRange.bind(editor);editor.$onRemoveRange=editor.$onRemoveRange.bind(editor);editor.$onMultiSelect=editor.$onMultiSelect.bind(editor);editor.$onSingleSelect=editor.$onSingleSelect.bind(editor);editor.$multiselectOnSessionChange=exports.onSessionChange.bind(editor);editor.$checkMultiselectChange=editor.$checkMultiselectChange.bind(editor);editor.$multiselectOnSessionChange(editor);editor.on("changeSession",editor.$multiselectOnSessionChange);editor.on("mousedown",onMouseDown);editor.commands.addCommands(commands.defaultCommands);addAltCursorListeners(editor);}function addAltCursorListeners(editor){var el=editor.textInput.getElement();var altCursor=false;event.addListener(el,"keydown",function(e){var altDown=e.keyCode==18&&!(e.ctrlKey||e.shiftKey||e.metaKey);if(editor.$blockSelectEnabled&&altDown){if(!altCursor){editor.renderer.setMouseCursor("crosshair");altCursor=true;}}else if(altCursor){reset();}});event.addListener(el,"keyup",reset);event.addListener(el,"blur",reset);function reset(e){if(altCursor){editor.renderer.setMouseCursor("");altCursor=false;}}}exports.MultiSelect=MultiSelect;acequire("./config").defineOptions(Editor.prototype,"editor",{enableMultiselect:{set:function set(val){MultiSelect(this);if(val){this.on("changeSession",this.$multiselectOnSessionChange);this.on("mousedown",onMouseDown);}else{this.off("changeSession",this.$multiselectOnSessionChange);this.off("mousedown",onMouseDown);}},value:true},enableBlockSelect:{set:function set(val){this.$blockSelectEnabled=val;},value:true}});});ace.define("ace/mode/folding/fold_mode",["require","exports","module","ace/range"],function(acequire,exports,module){"use strict";var Range=acequire("../../range").Range;var FoldMode=exports.FoldMode=function(){};(function(){this.foldingStartMarker=null;this.foldingStopMarker=null;this.getFoldWidget=function(session,foldStyle,row){var line=session.getLine(row);if(this.foldingStartMarker.test(line))return"start";if(foldStyle=="markbeginend"&&this.foldingStopMarker&&this.foldingStopMarker.test(line))return"end";return"";};this.getFoldWidgetRange=function(session,foldStyle,row){return null;};this.indentationBlock=function(session,row,column){var re=/\S/;var line=session.getLine(row);var startLevel=line.search(re);if(startLevel==-1)return;var startColumn=column||line.length;var maxRow=session.getLength();var startRow=row;var endRow=row;while(++row<maxRow){var level=session.getLine(row).search(re);if(level==-1)continue;if(level<=startLevel)break;endRow=row;}if(endRow>startRow){var endColumn=session.getLine(endRow).length;return new Range(startRow,startColumn,endRow,endColumn);}};this.openingBracketBlock=function(session,bracket,row,column,typeRe){var start={row:row,column:column+1};var end=session.$findClosingBracket(bracket,start,typeRe);if(!end)return;var fw=session.foldWidgets[end.row];if(fw==null)fw=session.getFoldWidget(end.row);if(fw=="start"&&end.row>start.row){end.row--;end.column=session.getLine(end.row).length;}return Range.fromPoints(start,end);};this.closingBracketBlock=function(session,bracket,row,column,typeRe){var end={row:row,column:column};var start=session.$findOpeningBracket(bracket,end);if(!start)return;start.column++;end.column--;return Range.fromPoints(start,end);};}).call(FoldMode.prototype);});ace.define("ace/theme/textmate",["require","exports","module","ace/lib/dom"],function(acequire,exports,module){"use strict";exports.isDark=false;exports.cssClass="ace-tm";exports.cssText=".ace-tm .ace_gutter {\
 background: #f0f0f0;\
@@ -8894,7 +8811,7 @@ background: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAYAAACZ
 });editor.container.env=editor.env=env;return editor;};exports.createEditSession=function(text,mode){var doc=new EditSession(text,mode);doc.setUndoManager(new UndoManager());return doc;};exports.EditSession=EditSession;exports.UndoManager=UndoManager;exports.version="1.2.6";});(function(){ace.acequire(["ace/ace"],function(a){if(a){a.config.init(true);a.define=ace.define;}if(!window.ace)window.ace=a;for(var key in a){if(a.hasOwnProperty(key))window.ace[key]=a[key];}});})();module.exports=window.ace.acequire("ace/ace");
 
 /***/ }),
-/* 41 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -8929,7 +8846,7 @@ function get_blob() {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21)))
 
 /***/ }),
-/* 42 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9065,15 +8982,15 @@ background: url(\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAACCAYAAACZ
 });
 
 /***/ }),
-/* 43 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var isObject = __webpack_require__(22),
-    now = __webpack_require__(44),
-    toNumber = __webpack_require__(46);
+    now = __webpack_require__(42),
+    toNumber = __webpack_require__(44);
 
 /** Error message constants. */
 var FUNC_ERROR_TEXT = 'Expected a function';
@@ -9260,7 +9177,7 @@ function debounce(func, wait, options) {
 module.exports = debounce;
 
 /***/ }),
-/* 44 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9291,7 +9208,7 @@ var now = function now() {
 module.exports = now;
 
 /***/ }),
-/* 45 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9306,14 +9223,14 @@ module.exports = freeGlobal;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(21)))
 
 /***/ }),
-/* 46 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var isObject = __webpack_require__(22),
-    isSymbol = __webpack_require__(47);
+    isSymbol = __webpack_require__(45);
 
 /** Used as references for various `Number` constants. */
 var NAN = 0 / 0;
@@ -9378,7 +9295,7 @@ function toNumber(value) {
 module.exports = toNumber;
 
 /***/ }),
-/* 47 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9386,8 +9303,8 @@ module.exports = toNumber;
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-var baseGetTag = __webpack_require__(48),
-    isObjectLike = __webpack_require__(51);
+var baseGetTag = __webpack_require__(46),
+    isObjectLike = __webpack_require__(49);
 
 /** `Object#toString` result references. */
 var symbolTag = '[object Symbol]';
@@ -9416,15 +9333,15 @@ function isSymbol(value) {
 module.exports = isSymbol;
 
 /***/ }),
-/* 48 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 
 var _Symbol = __webpack_require__(24),
-    getRawTag = __webpack_require__(49),
-    objectToString = __webpack_require__(50);
+    getRawTag = __webpack_require__(47),
+    objectToString = __webpack_require__(48);
 
 /** `Object#toString` result references. */
 var nullTag = '[object Null]',
@@ -9450,7 +9367,7 @@ function baseGetTag(value) {
 module.exports = baseGetTag;
 
 /***/ }),
-/* 49 */
+/* 47 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9504,7 +9421,7 @@ function getRawTag(value) {
 module.exports = getRawTag;
 
 /***/ }),
-/* 50 */
+/* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9534,7 +9451,7 @@ function objectToString(value) {
 module.exports = objectToString;
 
 /***/ }),
-/* 51 */
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9573,7 +9490,7 @@ function isObjectLike(value) {
 module.exports = isObjectLike;
 
 /***/ }),
-/* 52 */
+/* 50 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9584,18 +9501,69 @@ ace.define('ace/mode/my-mode', ["require", "exports", "module", "ace/lib/oop", "
     var TextMode = require("ace/mode/text").Mode;
     var TextHighlightRules = require("ace/mode/text_highlight_rules").TextHighlightRules;
 
+    var mySqlKeywords = /*sql*/"alter|and|as|asc|between|count|create|delete|desc|distinct|drop|from|having|in|insert|into|is|join|like|not|on|or|order|select|set|table|union|update|values|where"
+    /*mysql*/ + "|accessible|action|add|after|algorithm|all|analyze|asensitive|at|authors|auto_increment|autocommit|avg|avg_row_length|before|binary|binlog|both|btree|cache|call|cascade|cascaded|case|catalog_name|chain|change|changed|character|check|checkpoint|checksum|class_origin|client_statistics|close|coalesce|code|collate|collation|collations|column|columns|comment|commit|committed|completion|concurrent|condition|connection|consistent|constraint|contains|continue|contributors|convert|cross|current_date|current_time|current_timestamp|current_user|cursor|data|database|databases|day_hour|day_microsecond|day_minute|day_second|deallocate|dec|declare|default|delay_key_write|delayed|delimiter|des_key_file|describe|deterministic|dev_pop|dev_samp|deviance|directory|disable|discard|distinctrow|div|dual|dumpfile|each|elseif|enable|enclosed|end|ends|engine|engines|enum|errors|escape|escaped|even|event|events|every|execute|exists|exit|explain|extended|fast|fetch|field|fields|first|flush|for|force|foreign|found_rows|full|fulltext|function|general|global|grant|grants|group|groupby_concat|handler|hash|help|high_priority|hosts|hour_microsecond|hour_minute|hour_second|if|ignore|ignore_server_ids|import|index|index_statistics|infile|inner|innodb|inout|insensitive|insert_method|install|interval|invoker|isolation|iterate|key|keys|kill|language|last|leading|leave|left|level|limit|linear|lines|list|load|local|localtime|localtimestamp|lock|logs|low_priority|master|master_heartbeat_period|master_ssl_verify_server_cert|masters|match|max|max_rows|maxvalue|message_text|middleint|migrate|min|min_rows|minute_microsecond|minute_second|mod|mode|modifies|modify|mutex|mysql_errno|natural|next|no|no_write_to_binlog|offline|offset|one|online|open|optimize|option|optionally|out|outer|outfile|pack_keys|parser|partition|partitions|password|phase|plugin|plugins|prepare|preserve|prev|primary|privileges|procedure|processlist|profile|profiles|purge|query|quick|range|read|read_write|reads|real|rebuild|recover|references|regexp|relaylog|release|remove|rename|reorganize|repair|repeatable|replace|require|resignal|restrict|resume|return|returns|revoke|right|rlike|rollback|rollup|row|row_format|rtree|savepoint|schedule|schema|schema_name|schemas|second_microsecond|security|sensitive|separator|serializable|server|session|share|show|signal|slave|slow|smallint|snapshot|soname|spatial|specific|sql|sql_big_result|sql_buffer_result|sql_cache|sql_calc_found_rows|sql_no_cache|sql_small_result|sqlexception|sqlstate|sqlwarning|ssl|start|starting|starts|status|std|stddev|stddev_pop|stddev_samp|storage|straight_join|subclass_origin|sum|suspend|table_name|table_statistics|tables|tablespace|temporary|terminated|to|trailing|transaction|trigger|triggers|truncate|uncommitted|undo|uninstall|unique|unlock|upgrade|usage|use|use_frm|user|user_resources|user_statistics|using|utc_date|utc_time|utc_timestamp|value|variables|varying|view|views|warnings|when|while|with|work|write|xa|xor|year_month|zerofill|begin|do|then|else|loop|repeat";
+    var builtins = "by|bool|boolean|bit|blob|decimal|double|enum|float|long|longblob|longtext|medium|mediumblob|mediumint|mediumtext|time|timestamp|tinyblob|tinyint|tinytext|text|bigint|int|int1|int2|int3|int4|int8|integer|float|float4|float8|double|char|varbinary|varchar|varcharacter|precision|date|datetime|year|unsigned|signed|numeric|ucase|lcase|mid|len|round|rank|now|format|coalesce|ifnull|isnull|nvl";
+    var variable = "charset|clear|connect|edit|ego|exit|go|help|nopager|notee|nowarning|pager|print|prompt|quit|rehash|source|status|system|tee";
+
+    //operatorChars: /^[*+\-%<>!=&|^]/,
+
     var MyHighlightRules = function MyHighlightRules() {
         var keywordMapper = this.createKeywordMapper({
-            "keyword.control": "if|then|else",
-            "keyword.operator": "and|or|not",
-            "keyword.other": "class",
-            "storage.type": "int|float|text",
-            "storage.modifier": "private|public",
-            "support.function": "print|sort",
-            "constant.language": "true|false"
-        }, "identifier");
+            "support.function": builtins,
+            "keyword": mySqlKeywords,
+            "constant": "false|true|null|unknown|date|time|timestamp|ODBCdotTable|zerolessFloat",
+            "variable.language": variable
+        }, "identifier", true);
+
+        function string(rule) {
+            var start = rule.start;
+            var escapeSeq = rule.escape;
+            return {
+                token: "string.start",
+                regex: start,
+                next: [{ token: "constant.language.escape", regex: escapeSeq }, { token: "string.end", next: "start", regex: start }, { defaultToken: "string" }]
+            };
+        }
+
         this.$rules = {
-            "start": [{ token: "comment", regex: "//" }, { token: "string", regex: '["](?:(?:\\\\.)|(?:[^"\\\\]))*?["]' }, { token: "constant.numeric", regex: "0[xX][0-9a-fA-F]+\\b" }, { token: "constant.numeric", regex: "[+-]?\\d+(?:(?:\\.\\d*)?(?:[eE][+-]?\\d+)?)?\\b" }, { token: "keyword.operator", regex: "!|%|\\\\|/|\\*|\\-|\\+|~=|==|<>|!=|<=|>=|=|<|>|&&|\\|\\|" }, { token: "punctuation.operator", regex: "\\?|\\:|\\,|\\;|\\." }, { token: "paren.lparen", regex: "[[({]" }, { token: "paren.rparen", regex: "[\\])}]" }, { token: "text", regex: "\\s+" }, { token: keywordMapper, regex: "[a-zA-Z_$][a-zA-Z0-9_$]*\\b" }]
+            "start": [{
+                token: "comment", regex: "(?:-- |#).*$"
+            }, string({ start: '"', escape: /\\[0'"bnrtZ\\%_]?/ }), string({ start: "'", escape: /\\[0'"bnrtZ\\%_]?/ }),
+            // DocCommentHighlightRules.getStartRule("doc-start"),
+            {
+                token: "comment", // multi line comment
+                regex: /\/\*/,
+                next: "comment"
+            }, {
+                token: "constant.numeric", // hex
+                regex: /0[xX][0-9a-fA-F]+|[xX]'[0-9a-fA-F]+'|0[bB][01]+|[bB]'[01]+'/
+            }, {
+                token: "constant.numeric", // float
+                regex: "[+-]?\\d+(?:(?:\\.\\d*)?(?:[eE][+-]?\\d+)?)?\\b"
+            }, {
+                token: keywordMapper,
+                regex: "[a-zA-Z_$][a-zA-Z0-9_$]*\\b"
+            }, {
+                token: "constant.class",
+                regex: "@@?[a-zA-Z_$][a-zA-Z0-9_$]*\\b"
+            }, {
+                token: "constant.buildin",
+                regex: "`[^`]*`"
+            }, {
+                token: "keyword.operator",
+                regex: "\\+|\\-|\\/|\\/\\/|%|<@>|@>|<@|&|\\^|~|<|>|<=|=>|==|!=|<>|="
+            }, {
+                token: "paren.lparen",
+                regex: "[\\(]"
+            }, {
+                token: "paren.rparen",
+                regex: "[\\)]"
+            }, {
+                token: "text",
+                regex: "\\s+"
+            }],
+            "comment": [{ token: "comment", regex: "\\*\\/", next: "start" }, { defaultToken: "comment" }]
         };
     };
     oop.inherits(MyHighlightRules, TextHighlightRules);
@@ -9614,7 +9582,7 @@ ace.define('ace/mode/my-mode', ["require", "exports", "module", "ace/lib/oop", "
 });
 
 /***/ }),
-/* 53 */
+/* 51 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -9634,13 +9602,9 @@ var _CommonTokenStream = __webpack_require__(27);
 
 var _ErrorListener2 = __webpack_require__(12);
 
-var _tree = __webpack_require__(29);
+var _ExprLexer = __webpack_require__(54);
 
-var _ExprLexer = __webpack_require__(57);
-
-var _ExprParser = __webpack_require__(70);
-
-var _ExprListener2 = __webpack_require__(38);
+var _ExprParser = __webpack_require__(69);
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -9648,35 +9612,16 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var MyListener = function (_ExprListener) {
-    _inherits(MyListener, _ExprListener);
-
-    function MyListener() {
-        _classCallCheck(this, MyListener);
-
-        return _possibleConstructorReturn(this, (MyListener.__proto__ || Object.getPrototypeOf(MyListener)).apply(this, arguments));
-    }
-
-    _createClass(MyListener, [{
-        key: 'exitProg',
-        value: function exitProg(ctx) {
-            console.log('exitProg', ctx.getText());
-        }
-    }]);
-
-    return MyListener;
-}(_ExprListener2.ExprListener);
-
 var MyErrorListener = function (_ErrorListener) {
     _inherits(MyErrorListener, _ErrorListener);
 
     function MyErrorListener() {
         _classCallCheck(this, MyErrorListener);
 
-        var _this2 = _possibleConstructorReturn(this, (MyErrorListener.__proto__ || Object.getPrototypeOf(MyErrorListener)).call(this));
+        var _this = _possibleConstructorReturn(this, (MyErrorListener.__proto__ || Object.getPrototypeOf(MyErrorListener)).call(this));
 
-        _this2.errors = [];
-        return _this2;
+        _this.errors = [];
+        return _this;
     }
 
     _createClass(MyErrorListener, [{
@@ -9706,9 +9651,14 @@ var MyErrorListener = function (_ErrorListener) {
 }(_ErrorListener2.ErrorListener);
 
 function validate(input) {
+    if (!input) {
+        return [];
+    }
+
+    input = input.toLowerCase();
     var listener = new MyErrorListener();
 
-    var chars = new _InputStream.InputStream('' + input);
+    var chars = new _InputStream.InputStream(input + '<EOF>');
     var lexer = new _ExprLexer.ExprLexer(chars);
     lexer.removeErrorListeners();
     lexer.addErrorListener(listener);
@@ -9720,17 +9670,12 @@ function validate(input) {
     parser.removeErrorListeners();
     parser.addErrorListener(listener);
 
-    var walker = new _tree.ParseTreeWalker();
-    var loader = new MyListener();
-
-    var tree = parser.prog();
-
-    walker.walk(loader, tree);
+    parser.prog();
     return listener.errors;
 }
 
 /***/ }),
-/* 54 */
+/* 52 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10111,7 +10056,7 @@ BufferedTokenStream.prototype.fill = function () {
 exports.BufferedTokenStream = BufferedTokenStream;
 
 /***/ }),
-/* 55 */
+/* 53 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10188,6 +10133,81 @@ CommonTokenFactory.prototype.createThin = function (type, text) {
 exports.CommonTokenFactory = CommonTokenFactory;
 
 /***/ }),
+/* 54 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+// Generated from lib/Expr.g4 by ANTLR 4.7
+// jshint ignore: start
+var antlr4 = __webpack_require__(18);
+
+var serializedATN = ["\x03\u608B\uA72A\u8133\uB9ED\u417C\u3BE7\u7786\u5964", "\x02\x0Fd\b\x01\x04\x02\t\x02\x04\x03\t\x03\x04", "\x04\t\x04\x04\x05\t\x05\x04\x06\t\x06\x04\x07\t", "\x07\x04\b\t\b\x04\t\t\t\x04\n\t\n\x04\x0B\t\x0B\x04", "\f\t\f\x04\r\t\r\x04\x0E\t\x0E\x03\x02\x03\x02\x03", "\x02\x03\x02\x03\x02\x03\x02\x03\x03\x03\x03\x03", "\x04\x03\x04\x03\x05\x03\x05\x03\x06\x03\x06\x03", "\x06\x03\x07\x03\x07\x03\b\x03\b\x03\b\x03\t\x03", "\t\x03\n\x03\n\x03\n\x03\n\x03\x0B\x03\x0B\x03\x0B", "\x03\f\x03\f\x07\f=\n\f\f\f\x0E\f@\x0B\f\x03\r\x03\r\x03", "\r\x03\r\x07\rF\n\r\f\r\x0E\rI\x0B\r\x03\r\x05\rL\n\r\x03", "\r\x03\r\x03\r\x03\r\x03\r\x07\rS\n\r\f\r\x0E\rV\x0B\r", "\x03\r\x03\r\x05\rZ\n\r\x03\r\x03\r\x03\x0E\x06\x0E", "_\n\x0E\r\x0E\x0E\x0E`\x03\x0E\x03\x0E\x03T\x02", "\x0F\x03\x03\x05\x04\x07\x05\t\x06\x0B\x07\r\b\x0F", "\t\x11\n\x13\x0B\x15\f\x17\r\x19\x0E\x1B\x0F\x03", "\x02\x06\x05\x02C\\aac|\x06\x022;C\\aac|\x04\x02\f\f", "\x0F\x0F\x05\x02\x0B\f\x0F\x0F\"\"\x02i\x02\x03", "\x03\x02\x02\x02\x02\x05\x03\x02\x02\x02\x02\x07", "\x03\x02\x02\x02\x02\t\x03\x02\x02\x02\x02\x0B", "\x03\x02\x02\x02\x02\r\x03\x02\x02\x02\x02\x0F", "\x03\x02\x02\x02\x02\x11\x03\x02\x02\x02\x02\x13", "\x03\x02\x02\x02\x02\x15\x03\x02\x02\x02\x02\x17", "\x03\x02\x02\x02\x02\x19\x03\x02\x02\x02\x02\x1B", "\x03\x02\x02\x02\x03\x1D\x03\x02\x02\x02\x05#", "\x03\x02\x02\x02\x07%\x03\x02\x02\x02\t'\x03\x02", "\x02\x02\x0B)\x03\x02\x02\x02\r,\x03\x02\x02\x02", "\x0F.\x03\x02\x02\x02\x111\x03\x02\x02\x02\x13", "3\x03\x02\x02\x02\x157\x03\x02\x02\x02\x17:\x03", "\x02\x02\x02\x19Y\x03\x02\x02\x02\x1B^\x03\x02", "\x02\x02\x1D\x1E\x07>\x02\x02\x1E\x1F\x07G\x02", "\x02\x1F \x07Q\x02\x02 !\x07H\x02\x02!\"\x07@\x02", "\x02\"\x04\x03\x02\x02\x02#$\x07*\x02\x02$\x06\x03", "\x02\x02\x02%&\x07+\x02\x02&\b\x03\x02\x02\x02'", "(\x07>\x02\x02(\n\x03\x02\x02\x02)*\x07>\x02\x02", "*+\x07?\x02\x02+\f\x03\x02\x02\x02,-\x07@\x02\x02", "-\x0E\x03\x02\x02\x02./\x07@\x02\x02/0\x07?\x02", "\x020\x10\x03\x02\x02\x0212\x07.\x02\x022\x12\x03", "\x02\x02\x0234\x07c\x02\x0245\x07p\x02\x0256\x07", "f\x02\x026\x14\x03\x02\x02\x0278\x07q\x02\x0289", "\x07t\x02\x029\x16\x03\x02\x02\x02:>\t\x02\x02\x02", ";=\t\x03\x02\x02<;\x03\x02\x02\x02=@\x03\x02\x02", "\x02><\x03\x02\x02\x02>?\x03\x02\x02\x02?\x18\x03", "\x02\x02\x02@>\x03\x02\x02\x02AB\x071\x02\x02BC", "\x071\x02\x02CG\x03\x02\x02\x02DF\n\x04\x02\x02", "ED\x03\x02\x02\x02FI\x03\x02\x02\x02GE\x03\x02\x02", "\x02GH\x03\x02\x02\x02HK\x03\x02\x02\x02IG\x03\x02", "\x02\x02JL\x07\x0F\x02\x02KJ\x03\x02\x02\x02KL\x03", "\x02\x02\x02LM\x03\x02\x02\x02MZ\x07\f\x02\x02N", "O\x071\x02\x02OP\x07,\x02\x02PT\x03\x02\x02\x02", "QS\x0B\x02\x02\x02RQ\x03\x02\x02\x02SV\x03\x02\x02", "\x02TU\x03\x02\x02\x02TR\x03\x02\x02\x02UW\x03\x02", "\x02\x02VT\x03\x02\x02\x02WX\x07,\x02\x02XZ\x07", "1\x02\x02YA\x03\x02\x02\x02YN\x03\x02\x02\x02Z[", "\x03\x02\x02\x02[\\\b\r\x02\x02\\\x1A\x03\x02\x02", "\x02]_\t\x05\x02\x02^]\x03\x02\x02\x02_`\x03\x02", "\x02\x02`^\x03\x02\x02\x02`a\x03\x02\x02\x02ab\x03", "\x02\x02\x02bc\b\x0E\x02\x02c\x1C\x03\x02\x02\x02", "\t\x02>GKTY`\x03\b\x02\x02"].join("");
+
+var atn = new antlr4.atn.ATNDeserializer().deserialize(serializedATN);
+
+var decisionsToDFA = atn.decisionToState.map(function (ds, index) {
+    return new antlr4.dfa.DFA(ds, index);
+});
+
+function ExprLexer(input) {
+    antlr4.Lexer.call(this, input);
+    this._interp = new antlr4.atn.LexerATNSimulator(this, atn, decisionsToDFA, new antlr4.PredictionContextCache());
+    return this;
+}
+
+ExprLexer.prototype = Object.create(antlr4.Lexer.prototype);
+ExprLexer.prototype.constructor = ExprLexer;
+
+ExprLexer.EOF = antlr4.Token.EOF;
+ExprLexer.T__0 = 1;
+ExprLexer.T__1 = 2;
+ExprLexer.T__2 = 3;
+ExprLexer.T__3 = 4;
+ExprLexer.T__4 = 5;
+ExprLexer.T__5 = 6;
+ExprLexer.T__6 = 7;
+ExprLexer.T__7 = 8;
+ExprLexer.T__8 = 9;
+ExprLexer.T__9 = 10;
+ExprLexer.ID = 11;
+ExprLexer.COMMENT = 12;
+ExprLexer.WS = 13;
+
+ExprLexer.prototype.channelNames = ["DEFAULT_TOKEN_CHANNEL", "HIDDEN"];
+
+ExprLexer.prototype.modeNames = ["DEFAULT_MODE"];
+
+ExprLexer.prototype.literalNames = [null, "'<EOF>'", "'('", "')'", "'<'", "'<='", "'>'", "'>='", "','", "'and'", "'or'"];
+
+ExprLexer.prototype.symbolicNames = [null, null, null, null, null, null, null, null, null, null, null, "ID", "COMMENT", "WS"];
+
+ExprLexer.prototype.ruleNames = ["T__0", "T__1", "T__2", "T__3", "T__4", "T__5", "T__6", "T__7", "T__8", "T__9", "ID", "COMMENT", "WS"];
+
+ExprLexer.prototype.grammarFileName = "Expr.g4";
+
+exports.ExprLexer = ExprLexer;
+
+/***/ }),
+/* 55 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/* Copyright (c) 2012-2017 The ANTLR Project. All rights reserved.
+ * Use of this file is governed by the BSD 3-clause license that
+ * can be found in the LICENSE.txt file in the project root.
+ */
+
+exports.ATN = __webpack_require__(8).ATN;
+exports.ATNDeserializer = __webpack_require__(30).ATNDeserializer;
+exports.LexerATNSimulator = __webpack_require__(58).LexerATNSimulator;
+exports.ParserATNSimulator = __webpack_require__(60).ParserATNSimulator;
+exports.PredictionMode = __webpack_require__(34).PredictionMode;
+
+/***/ }),
 /* 56 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -10204,10 +10224,10 @@ exports.CommonTokenFactory = CommonTokenFactory;
 var Set = __webpack_require__(0).Set;
 var BitSet = __webpack_require__(0).BitSet;
 var Token = __webpack_require__(1).Token;
-var ATNConfig = __webpack_require__(16).ATNConfig;
+var ATNConfig = __webpack_require__(15).ATNConfig;
 var Interval = __webpack_require__(2).Interval;
 var IntervalSet = __webpack_require__(2).IntervalSet;
-var RuleStopState = __webpack_require__(5).RuleStopState;
+var RuleStopState = __webpack_require__(4).RuleStopState;
 var RuleTransition = __webpack_require__(7).RuleTransition;
 var NotSetTransition = __webpack_require__(7).NotSetTransition;
 var WildcardTransition = __webpack_require__(7).WildcardTransition;
@@ -10398,82 +10418,6 @@ exports.LL1Analyzer = LL1Analyzer;
 "use strict";
 
 
-// Generated from lib/Expr.g4 by ANTLR 4.7
-// jshint ignore: start
-var antlr4 = __webpack_require__(17);
-
-var serializedATN = ["\x03\u608B\uA72A\u8133\uB9ED\u417C\u3BE7\u7786\u5964", "\x02\x10\xD4\b\x01\x04\x02\t\x02\x04\x03\t\x03\x04", "\x04\t\x04\x04\x05\t\x05\x04\x06\t\x06\x04\x07\t", "\x07\x04\b\t\b\x04\t\t\t\x04\n\t\n\x04\x0B\t\x0B\x04", "\f\t\f\x04\r\t\r\x04\x0E\t\x0E\x04\x0F\t\x0F\x04\x10", "\t\x10\x04\x11\t\x11\x04\x12\t\x12\x04\x13\t\x13", "\x04\x14\t\x14\x04\x15\t\x15\x04\x16\t\x16\x04\x17", "\t\x17\x04\x18\t\x18\x04\x19\t\x19\x04\x1A\t\x1A", "\x04\x1B\t\x1B\x04\x1C\t\x1C\x04\x1D\t\x1D\x04\x1E", "\t\x1E\x04\x1F\t\x1F\x04 \t \x04!\t!\x04\"\t\"\x04#", "\t#\x04$\t$\x04%\t%\x04&\t&\x04'\t'\x04(\t(\x04)\t)\x04", "*\t*\x03\x02\x03\x02\x03\x03\x03\x03\x03\x03\x03", "\x04\x03\x04\x03\x05\x03\x05\x03\x05\x03\x06\x03", "\x06\x03\x07\x03\x07\x03\b\x03\b\x03\t\x03\t\x07", "\th\n\t\f\t\x0E\tk\x0B\t\x03\n\x03\n\x03\n\x03\n\x03\x0B", "\x03\x0B\x03\x0B\x03\f\x03\f\x03\f\x03\r\x05\rx\n", "\r\x03\r\x03\r\x03\x0E\x03\x0E\x03\x0E\x03\x0E\x07", "\x0E\x80\n\x0E\f\x0E\x0E\x0E\x83\x0B\x0E\x03\x0E", "\x05\x0E\x86\n\x0E\x03\x0E\x03\x0E\x03\x0E\x03", "\x0E\x03\x0E\x07\x0E\x8D\n\x0E\f\x0E\x0E\x0E\x90", "\x0B\x0E\x03\x0E\x03\x0E\x05\x0E\x94\n\x0E\x03", "\x0E\x03\x0E\x03\x0F\x06\x0F\x99\n\x0F\r\x0F\x0E", "\x0F\x9A\x03\x0F\x03\x0F\x03\x10\x03\x10\x03\x11", "\x03\x11\x03\x12\x03\x12\x03\x13\x03\x13\x03\x14", "\x03\x14\x03\x15\x03\x15\x03\x16\x03\x16\x03\x17", "\x03\x17\x03\x18\x03\x18\x03\x19\x03\x19\x03\x1A", "\x03\x1A\x03\x1B\x03\x1B\x03\x1C\x03\x1C\x03\x1D", "\x03\x1D\x03\x1E\x03\x1E\x03\x1F\x03\x1F\x03 ", "\x03 \x03!\x03!\x03\"\x03\"\x03#\x03#\x03$\x03$\x03", "%\x03%\x03&\x03&\x03'\x03'\x03(\x03(\x03)\x03)\x03", "*\x03*\x03\x8E\x02+\x03\x03\x05\x04\x07\x05\t\x06", "\x0B\x07\r\b\x0F\t\x11\n\x13\x0B\x15\f\x17\r\x19\x0E", "\x1B\x0F\x1D\x10\x1F\x02!\x02#\x02%\x02'\x02)\x02", "+\x02-\x02/\x021\x023\x025\x027\x029\x02;\x02=\x02", "?\x02A\x02C\x02E\x02G\x02I\x02K\x02M\x02O\x02Q\x02", "S\x02\x03\x02!\x05\x02C\\aac|\x06\x022;C\\aac|\x04\x02", "\f\f\x0F\x0F\x04\x02\x0B\x0B\"\"\x03\x022;\x04\x02", "CCcc\x04\x02DDdd\x04\x02EEee\x04\x02FFff\x04\x02GGg", "g\x04\x02HHhh\x04\x02IIii\x04\x02JJjj\x04\x02KKkk\x04", "\x02LLll\x04\x02MMmm\x04\x02NNnn\x04\x02OOoo\x04\x02", "PPpp\x04\x02QQqq\x04\x02RRrr\x04\x02SSss\x04\x02TTt", "t\x04\x02UUuu\x04\x02VVvv\x04\x02WWww\x04\x02XXxx\x04", "\x02YYyy\x04\x02ZZzz\x04\x02[[{{\x04\x02\\\\||\x02\xBF", "\x02\x03\x03\x02\x02\x02\x02\x05\x03\x02\x02\x02", "\x02\x07\x03\x02\x02\x02\x02\t\x03\x02\x02\x02", "\x02\x0B\x03\x02\x02\x02\x02\r\x03\x02\x02\x02", "\x02\x0F\x03\x02\x02\x02\x02\x11\x03\x02\x02\x02", "\x02\x13\x03\x02\x02\x02\x02\x15\x03\x02\x02\x02", "\x02\x17\x03\x02\x02\x02\x02\x19\x03\x02\x02\x02", "\x02\x1B\x03\x02\x02\x02\x02\x1D\x03\x02\x02\x02", "\x03U\x03\x02\x02\x02\x05W\x03\x02\x02\x02\x07", "Z\x03\x02\x02\x02\t\\\x03\x02\x02\x02\x0B_\x03\x02", "\x02\x02\ra\x03\x02\x02\x02\x0Fc\x03\x02\x02\x02", "\x11e\x03\x02\x02\x02\x13l\x03\x02\x02\x02\x15", "p\x03\x02\x02\x02\x17s\x03\x02\x02\x02\x19w\x03", "\x02\x02\x02\x1B\x93\x03\x02\x02\x02\x1D\x98\x03", "\x02\x02\x02\x1F\x9E\x03\x02\x02\x02!\xA0\x03", "\x02\x02\x02#\xA2\x03\x02\x02\x02%\xA4\x03\x02", "\x02\x02'\xA6\x03\x02\x02\x02)\xA8\x03\x02\x02", "\x02+\xAA\x03\x02\x02\x02-\xAC\x03\x02\x02\x02", "/\xAE\x03\x02\x02\x021\xB0\x03\x02\x02\x023\xB2", "\x03\x02\x02\x025\xB4\x03\x02\x02\x027\xB6\x03", "\x02\x02\x029\xB8\x03\x02\x02\x02;\xBA\x03\x02", "\x02\x02=\xBC\x03\x02\x02\x02?\xBE\x03\x02\x02", "\x02A\xC0\x03\x02\x02\x02C\xC2\x03\x02\x02\x02", "E\xC4\x03\x02\x02\x02G\xC6\x03\x02\x02\x02I\xC8", "\x03\x02\x02\x02K\xCA\x03\x02\x02\x02M\xCC\x03", "\x02\x02\x02O\xCE\x03\x02\x02\x02Q\xD0\x03\x02", "\x02\x02S\xD2\x03\x02\x02\x02UV\x07>\x02\x02V\x04", "\x03\x02\x02\x02WX\x07>\x02\x02XY\x07?\x02\x02Y", "\x06\x03\x02\x02\x02Z[\x07@\x02\x02[\b\x03\x02\x02", "\x02\\]\x07@\x02\x02]^\x07?\x02\x02^\n\x03\x02\x02", "\x02_`\x07*\x02\x02`\f\x03\x02\x02\x02ab\x07+\x02", "\x02b\x0E\x03\x02\x02\x02cd\x07.\x02\x02d\x10\x03", "\x02\x02\x02ei\t\x02\x02\x02fh\t\x03\x02\x02gf\x03", "\x02\x02\x02hk\x03\x02\x02\x02ig\x03\x02\x02\x02", "ij\x03\x02\x02\x02j\x12\x03\x02\x02\x02ki\x03\x02", "\x02\x02lm\x05!\x11\x02mn\x05;\x1E\x02no\x05'\x14", "\x02o\x14\x03\x02\x02\x02pq\x05=\x1F\x02qr\x05C", "\"\x02r\x16\x03\x02\x02\x02st\x051\x19\x02tu\x05", "E#\x02u\x18\x03\x02\x02\x02vx\x07\x0F\x02\x02wv", "\x03\x02\x02\x02wx\x03\x02\x02\x02xy\x03\x02\x02", "\x02yz\x07\f\x02\x02z\x1A\x03\x02\x02\x02{|\x07", "1\x02\x02|}\x071\x02\x02}\x81\x03\x02\x02\x02~\x80", "\n\x04\x02\x02\x7F~\x03\x02\x02\x02\x80\x83\x03", "\x02\x02\x02\x81\x7F\x03\x02\x02\x02\x81\x82\x03", "\x02\x02\x02\x82\x85\x03\x02\x02\x02\x83\x81\x03", "\x02\x02\x02\x84\x86\x07\x0F\x02\x02\x85\x84\x03", "\x02\x02\x02\x85\x86\x03\x02\x02\x02\x86\x87\x03", "\x02\x02\x02\x87\x94\x07\f\x02\x02\x88\x89\x07", "1\x02\x02\x89\x8A\x07,\x02\x02\x8A\x8E\x03\x02", "\x02\x02\x8B\x8D\x0B\x02\x02\x02\x8C\x8B\x03\x02", "\x02\x02\x8D\x90\x03\x02\x02\x02\x8E\x8F\x03\x02", "\x02\x02\x8E\x8C\x03\x02\x02\x02\x8F\x91\x03\x02", "\x02\x02\x90\x8E\x03\x02\x02\x02\x91\x92\x07,", "\x02\x02\x92\x94\x071\x02\x02\x93{\x03\x02\x02", "\x02\x93\x88\x03\x02\x02\x02\x94\x95\x03\x02\x02", "\x02\x95\x96\b\x0E\x02\x02\x96\x1C\x03\x02\x02", "\x02\x97\x99\t\x05\x02\x02\x98\x97\x03\x02\x02", "\x02\x99\x9A\x03\x02\x02\x02\x9A\x98\x03\x02\x02", "\x02\x9A\x9B\x03\x02\x02\x02\x9B\x9C\x03\x02\x02", "\x02\x9C\x9D\b\x0F\x02\x02\x9D\x1E\x03\x02\x02", "\x02\x9E\x9F\t\x06\x02\x02\x9F \x03\x02\x02\x02", "\xA0\xA1\t\x07\x02\x02\xA1\"\x03\x02\x02\x02\xA2", "\xA3\t\b\x02\x02\xA3$\x03\x02\x02\x02\xA4\xA5\t", "\t\x02\x02\xA5&\x03\x02\x02\x02\xA6\xA7\t\n\x02", "\x02\xA7(\x03\x02\x02\x02\xA8\xA9\t\x0B\x02\x02", "\xA9*\x03\x02\x02\x02\xAA\xAB\t\f\x02\x02\xAB,\x03", "\x02\x02\x02\xAC\xAD\t\r\x02\x02\xAD.\x03\x02\x02", "\x02\xAE\xAF\t\x0E\x02\x02\xAF0\x03\x02\x02\x02", "\xB0\xB1\t\x0F\x02\x02\xB12\x03\x02\x02\x02\xB2", "\xB3\t\x10\x02\x02\xB34\x03\x02\x02\x02\xB4\xB5", "\t\x11\x02\x02\xB56\x03\x02\x02\x02\xB6\xB7\t\x12", "\x02\x02\xB78\x03\x02\x02\x02\xB8\xB9\t\x13\x02", "\x02\xB9:\x03\x02\x02\x02\xBA\xBB\t\x14\x02\x02", "\xBB<\x03\x02\x02\x02\xBC\xBD\t\x15\x02\x02\xBD", ">\x03\x02\x02\x02\xBE\xBF\t\x16\x02\x02\xBF@\x03", "\x02\x02\x02\xC0\xC1\t\x17\x02\x02\xC1B\x03\x02", "\x02\x02\xC2\xC3\t\x18\x02\x02\xC3D\x03\x02\x02", "\x02\xC4\xC5\t\x19\x02\x02\xC5F\x03\x02\x02\x02", "\xC6\xC7\t\x1A\x02\x02\xC7H\x03\x02\x02\x02\xC8", "\xC9\t\x1B\x02\x02\xC9J\x03\x02\x02\x02\xCA\xCB", "\t\x1C\x02\x02\xCBL\x03\x02\x02\x02\xCC\xCD\t\x1D", "\x02\x02\xCDN\x03\x02\x02\x02\xCE\xCF\t\x1E\x02", "\x02\xCFP\x03\x02\x02\x02\xD0\xD1\t\x1F\x02\x02", "\xD1R\x03\x02\x02\x02\xD2\xD3\t \x02\x02\xD3T\x03", "\x02\x02\x02\n\x02iw\x81\x85\x8E\x93\x9A\x03\b\x02", "\x02"].join("");
-
-var atn = new antlr4.atn.ATNDeserializer().deserialize(serializedATN);
-
-var decisionsToDFA = atn.decisionToState.map(function (ds, index) {
-    return new antlr4.dfa.DFA(ds, index);
-});
-
-function ExprLexer(input) {
-    antlr4.Lexer.call(this, input);
-    this._interp = new antlr4.atn.LexerATNSimulator(this, atn, decisionsToDFA, new antlr4.PredictionContextCache());
-    return this;
-}
-
-ExprLexer.prototype = Object.create(antlr4.Lexer.prototype);
-ExprLexer.prototype.constructor = ExprLexer;
-
-ExprLexer.EOF = antlr4.Token.EOF;
-ExprLexer.T__0 = 1;
-ExprLexer.T__1 = 2;
-ExprLexer.T__2 = 3;
-ExprLexer.T__3 = 4;
-ExprLexer.T__4 = 5;
-ExprLexer.T__5 = 6;
-ExprLexer.T__6 = 7;
-ExprLexer.ID = 8;
-ExprLexer.AND = 9;
-ExprLexer.OR = 10;
-ExprLexer.IS = 11;
-ExprLexer.NEWLINE = 12;
-ExprLexer.COMMENT = 13;
-ExprLexer.WS = 14;
-
-ExprLexer.prototype.channelNames = ["DEFAULT_TOKEN_CHANNEL", "HIDDEN"];
-
-ExprLexer.prototype.modeNames = ["DEFAULT_MODE"];
-
-ExprLexer.prototype.literalNames = [null, "'<'", "'<='", "'>'", "'>='", "'('", "')'", "','"];
-
-ExprLexer.prototype.symbolicNames = [null, null, null, null, null, null, null, null, "ID", "AND", "OR", "IS", "NEWLINE", "COMMENT", "WS"];
-
-ExprLexer.prototype.ruleNames = ["T__0", "T__1", "T__2", "T__3", "T__4", "T__5", "T__6", "ID", "AND", "OR", "IS", "NEWLINE", "COMMENT", "WS", "DIGIT", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"];
-
-ExprLexer.prototype.grammarFileName = "Expr.g4";
-
-exports.ExprLexer = ExprLexer;
-
-/***/ }),
-/* 58 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-/* Copyright (c) 2012-2017 The ANTLR Project. All rights reserved.
- * Use of this file is governed by the BSD 3-clause license that
- * can be found in the LICENSE.txt file in the project root.
- */
-
-exports.ATN = __webpack_require__(8).ATN;
-exports.ATNDeserializer = __webpack_require__(31).ATNDeserializer;
-exports.LexerATNSimulator = __webpack_require__(60).LexerATNSimulator;
-exports.ParserATNSimulator = __webpack_require__(62).ParserATNSimulator;
-exports.PredictionMode = __webpack_require__(35).PredictionMode;
-
-/***/ }),
-/* 59 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
 /* Copyright (c) 2012-2017 The ANTLR Project. All rights reserved.
  * Use of this file is governed by the BSD 3-clause license that
  * can be found in the LICENSE.txt file in the project root.
@@ -10490,7 +10434,7 @@ ATNType.PARSER = 1;
 exports.ATNType = ATNType;
 
 /***/ }),
-/* 60 */
+/* 58 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -10522,16 +10466,16 @@ exports.ATNType = ATNType;
 var Token = __webpack_require__(1).Token;
 var Lexer = __webpack_require__(14).Lexer;
 var ATN = __webpack_require__(8).ATN;
-var ATNSimulator = __webpack_require__(34).ATNSimulator;
+var ATNSimulator = __webpack_require__(33).ATNSimulator;
 var DFAState = __webpack_require__(11).DFAState;
 var ATNConfigSet = __webpack_require__(9).ATNConfigSet;
 var OrderedATNConfigSet = __webpack_require__(9).OrderedATNConfigSet;
 var PredictionContext = __webpack_require__(6).PredictionContext;
 var SingletonPredictionContext = __webpack_require__(6).SingletonPredictionContext;
-var RuleStopState = __webpack_require__(5).RuleStopState;
-var LexerATNConfig = __webpack_require__(16).LexerATNConfig;
+var RuleStopState = __webpack_require__(4).RuleStopState;
+var LexerATNConfig = __webpack_require__(15).LexerATNConfig;
 var Transition = __webpack_require__(7).Transition;
-var LexerActionExecutor = __webpack_require__(61).LexerActionExecutor;
+var LexerActionExecutor = __webpack_require__(59).LexerActionExecutor;
 var LexerNoViableAltException = __webpack_require__(3).LexerNoViableAltException;
 
 function resetSimState(sim) {
@@ -11122,7 +11066,7 @@ LexerATNSimulator.prototype.getTokenName = function (tt) {
 exports.LexerATNSimulator = LexerATNSimulator;
 
 /***/ }),
-/* 61 */
+/* 59 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11143,7 +11087,7 @@ exports.LexerATNSimulator = LexerATNSimulator;
 // not cause bloating of the {@link DFA} created for the lexer.</p>
 
 var hashStuff = __webpack_require__(0).hashStuff;
-var LexerIndexedCustomAction = __webpack_require__(33).LexerIndexedCustomAction;
+var LexerIndexedCustomAction = __webpack_require__(32).LexerIndexedCustomAction;
 
 function LexerActionExecutor(lexerActions) {
 	this.lexerActions = lexerActions === null ? [] : lexerActions;
@@ -11293,7 +11237,7 @@ LexerActionExecutor.prototype.equals = function (other) {
 exports.LexerActionExecutor = LexerActionExecutor;
 
 /***/ }),
-/* 62 */
+/* 60 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -11539,19 +11483,19 @@ var Set = Utils.Set;
 var BitSet = Utils.BitSet;
 var DoubleDict = Utils.DoubleDict;
 var ATN = __webpack_require__(8).ATN;
-var ATNState = __webpack_require__(5).ATNState;
-var ATNConfig = __webpack_require__(16).ATNConfig;
+var ATNState = __webpack_require__(4).ATNState;
+var ATNConfig = __webpack_require__(15).ATNConfig;
 var ATNConfigSet = __webpack_require__(9).ATNConfigSet;
 var Token = __webpack_require__(1).Token;
 var DFAState = __webpack_require__(11).DFAState;
 var PredPrediction = __webpack_require__(11).PredPrediction;
-var ATNSimulator = __webpack_require__(34).ATNSimulator;
-var PredictionMode = __webpack_require__(35).PredictionMode;
-var RuleContext = __webpack_require__(15).RuleContext;
+var ATNSimulator = __webpack_require__(33).ATNSimulator;
+var PredictionMode = __webpack_require__(34).PredictionMode;
+var RuleContext = __webpack_require__(16).RuleContext;
 var ParserRuleContext = __webpack_require__(19).ParserRuleContext;
 var SemanticContext = __webpack_require__(10).SemanticContext;
-var StarLoopEntryState = __webpack_require__(5).StarLoopEntryState;
-var RuleStopState = __webpack_require__(5).RuleStopState;
+var StarLoopEntryState = __webpack_require__(4).StarLoopEntryState;
+var RuleStopState = __webpack_require__(4).RuleStopState;
 var PredictionContext = __webpack_require__(6).PredictionContext;
 var Interval = __webpack_require__(2).Interval;
 var Transitions = __webpack_require__(7);
@@ -12992,7 +12936,7 @@ ParserATNSimulator.prototype.reportAmbiguity = function (dfa, D, startIndex, sto
 exports.ParserATNSimulator = ParserATNSimulator;
 
 /***/ }),
-/* 63 */
+/* 61 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13003,13 +12947,13 @@ exports.ParserATNSimulator = ParserATNSimulator;
  * can be found in the LICENSE.txt file in the project root.
  */
 
-exports.DFA = __webpack_require__(64).DFA;
-exports.DFASerializer = __webpack_require__(18).DFASerializer;
-exports.LexerDFASerializer = __webpack_require__(18).LexerDFASerializer;
+exports.DFA = __webpack_require__(62).DFA;
+exports.DFASerializer = __webpack_require__(17).DFASerializer;
+exports.LexerDFASerializer = __webpack_require__(17).LexerDFASerializer;
 exports.PredPrediction = __webpack_require__(11).PredPrediction;
 
 /***/ }),
-/* 64 */
+/* 62 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13023,10 +12967,10 @@ exports.PredPrediction = __webpack_require__(11).PredPrediction;
 
 var Set = __webpack_require__(0).Set;
 var DFAState = __webpack_require__(11).DFAState;
-var StarLoopEntryState = __webpack_require__(5).StarLoopEntryState;
+var StarLoopEntryState = __webpack_require__(4).StarLoopEntryState;
 var ATNConfigSet = __webpack_require__(9).ATNConfigSet;
-var DFASerializer = __webpack_require__(18).DFASerializer;
-var LexerDFASerializer = __webpack_require__(18).LexerDFASerializer;
+var DFASerializer = __webpack_require__(17).DFASerializer;
+var LexerDFASerializer = __webpack_require__(17).LexerDFASerializer;
 
 function DFA(atnStartState, decision) {
 	if (decision === undefined) {
@@ -13167,7 +13111,26 @@ DFA.prototype.toLexerString = function () {
 exports.DFA = DFA;
 
 /***/ }),
-/* 65 */
+/* 63 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+/* Copyright (c) 2012-2017 The ANTLR Project. All rights reserved.
+ * Use of this file is governed by the BSD 3-clause license that
+ * can be found in the LICENSE.txt file in the project root.
+ */
+
+var Tree = __webpack_require__(5);
+exports.Trees = __webpack_require__(29).Trees;
+exports.RuleNode = Tree.RuleNode;
+exports.ParseTreeListener = Tree.ParseTreeListener;
+exports.ParseTreeVisitor = Tree.ParseTreeVisitor;
+exports.ParseTreeWalker = Tree.ParseTreeWalker;
+
+/***/ }),
+/* 64 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13183,12 +13146,12 @@ exports.NoViableAltException = __webpack_require__(3).NoViableAltException;
 exports.LexerNoViableAltException = __webpack_require__(3).LexerNoViableAltException;
 exports.InputMismatchException = __webpack_require__(3).InputMismatchException;
 exports.FailedPredicateException = __webpack_require__(3).FailedPredicateException;
-exports.DiagnosticErrorListener = __webpack_require__(66).DiagnosticErrorListener;
-exports.BailErrorStrategy = __webpack_require__(36).BailErrorStrategy;
+exports.DiagnosticErrorListener = __webpack_require__(65).DiagnosticErrorListener;
+exports.BailErrorStrategy = __webpack_require__(35).BailErrorStrategy;
 exports.ErrorListener = __webpack_require__(12).ErrorListener;
 
 /***/ }),
-/* 66 */
+/* 65 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13293,7 +13256,7 @@ DiagnosticErrorListener.prototype.getConflictingAlts = function (reportedAlts, c
 exports.DiagnosticErrorListener = DiagnosticErrorListener;
 
 /***/ }),
-/* 67 */
+/* 66 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13309,7 +13272,7 @@ exports.DiagnosticErrorListener = DiagnosticErrorListener;
 var InputStream = __webpack_require__(13).InputStream;
 
 var isNodeJs = typeof window === 'undefined' && typeof importScripts === 'undefined';
-var fs = isNodeJs ? __webpack_require__(37) : null;
+var fs = isNodeJs ? __webpack_require__(36) : null;
 
 // Utility functions to create InputStreams from various sources.
 //
@@ -13372,7 +13335,7 @@ var CharStreams = {
 exports.CharStreams = CharStreams;
 
 /***/ }),
-/* 68 */
+/* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13391,7 +13354,7 @@ exports.CharStreams = CharStreams;
 //
 var InputStream = __webpack_require__(13).InputStream;
 var isNodeJs = typeof window === 'undefined' && typeof importScripts === 'undefined';
-var fs = isNodeJs ? __webpack_require__(37) : null;
+var fs = isNodeJs ? __webpack_require__(36) : null;
 
 function FileStream(fileName, decodeToUnicodeCodePoints) {
 	var data = fs.readFileSync(fileName, "utf8");
@@ -13406,7 +13369,7 @@ FileStream.prototype.constructor = FileStream;
 exports.FileStream = FileStream;
 
 /***/ }),
-/* 69 */
+/* 68 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -13418,13 +13381,13 @@ exports.FileStream = FileStream;
  */
 
 var Token = __webpack_require__(1).Token;
-var ParseTreeListener = __webpack_require__(4).ParseTreeListener;
+var ParseTreeListener = __webpack_require__(5).ParseTreeListener;
 var Recognizer = __webpack_require__(28).Recognizer;
-var DefaultErrorStrategy = __webpack_require__(36).DefaultErrorStrategy;
-var ATNDeserializer = __webpack_require__(31).ATNDeserializer;
-var ATNDeserializationOptions = __webpack_require__(32).ATNDeserializationOptions;
-var TerminalNode = __webpack_require__(4).TerminalNode;
-var ErrorNode = __webpack_require__(4).ErrorNode;
+var DefaultErrorStrategy = __webpack_require__(35).DefaultErrorStrategy;
+var ATNDeserializer = __webpack_require__(30).ATNDeserializer;
+var ATNDeserializationOptions = __webpack_require__(31).ATNDeserializationOptions;
+var TerminalNode = __webpack_require__(5).TerminalNode;
+var ErrorNode = __webpack_require__(5).ErrorNode;
 
 function TraceListener(parser) {
 	ParseTreeListener.call(this);
@@ -14086,7 +14049,7 @@ Parser.prototype.setTrace = function (trace) {
 exports.Parser = Parser;
 
 /***/ }),
-/* 70 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14094,13 +14057,12 @@ exports.Parser = Parser;
 
 // Generated from lib/Expr.g4 by ANTLR 4.7
 // jshint ignore: start
-var antlr4 = __webpack_require__(17);
-var ExprListener = __webpack_require__(38).ExprListener;
-var ExprVisitor = __webpack_require__(71).ExprVisitor;
+var antlr4 = __webpack_require__(18);
+var ExprVisitor = __webpack_require__(70).ExprVisitor;
 
 var grammarFileName = "Expr.g4";
 
-var serializedATN = ['\x03\u608B\uA72A\u8133\uB9ED\u417C\u3BE7\u7786\u5964', '\x03\x10,\x04\x02\t\x02\x04\x03\t\x03\x03\x02\x03', '\x02\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03', '\x03\x03\x03\x03\x03\x03\x03\x03\x03\x07\x03\x13', '\n\x03\f\x03\x0E\x03\x16\x0B\x03\x05\x03\x18\n\x03', '\x03\x03\x03\x03\x05\x03\x1C\n\x03\x03\x03\x03', '\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03', '\x03\x03\x03\x07\x03\'\n\x03\f\x03\x0E\x03*\x0B', '\x03\x03\x03\x02\x03\x04\x04\x02\x04\x02\x03\x03', '\x02\x03\x06\x020\x02\x06\x03\x02\x02\x02\x04', '\x1B\x03\x02\x02\x02\x06\x07\x05\x04\x03\x02\x07', '\x03\x03\x02\x02\x02\b\t\b\x03\x01\x02\t\n\x07\x07', '\x02\x02\n\x0B\x05\x04\x03\x02\x0B\f\x07\b\x02\x02', '\f\x1C\x03\x02\x02\x02\r\x0E\x07\n\x02\x02\x0E\x17', '\x07\x07\x02\x02\x0F\x14\x05\x04\x03\x02\x10\x11', '\x07\t\x02\x02\x11\x13\x05\x04\x03\x02\x12\x10', '\x03\x02\x02\x02\x13\x16\x03\x02\x02\x02\x14\x12', '\x03\x02\x02\x02\x14\x15\x03\x02\x02\x02\x15\x18', '\x03\x02\x02\x02\x16\x14\x03\x02\x02\x02\x17\x0F', '\x03\x02\x02\x02\x17\x18\x03\x02\x02\x02\x18\x19', '\x03\x02\x02\x02\x19\x1C\x07\b\x02\x02\x1A\x1C', '\x07\x0E\x02\x02\x1B\b\x03\x02\x02\x02\x1B\r\x03', '\x02\x02\x02\x1B\x1A\x03\x02\x02\x02\x1C(\x03', '\x02\x02\x02\x1D\x1E\f\b\x02\x02\x1E\x1F\x07\x0B', '\x02\x02\x1F\'\x05\x04\x03\t !\f\x07\x02\x02!"\x07', '\f\x02\x02"\'\x05\x04\x03\b#$\f\x06\x02\x02$%\t\x02', '\x02\x02%\'\x05\x04\x03\x07&\x1D\x03\x02\x02\x02', '& \x03\x02\x02\x02&#\x03\x02\x02\x02\'*\x03\x02', '\x02\x02(&\x03\x02\x02\x02()\x03\x02\x02\x02)\x05', '\x03\x02\x02\x02*(\x03\x02\x02\x02\x07\x14\x17', '\x1B&('].join("");
+var serializedATN = ['\x03\u608B\uA72A\u8133\uB9ED\u417C\u3BE7\u7786\u5964', '\x03\x0F9\x04\x02\t\x02\x04\x03\t\x03\x04\x04\t', '\x04\x04\x05\t\x05\x04\x06\t\x06\x03\x02\x03\x02', '\x03\x02\x03\x03\x03\x03\x03\x03\x03\x03\x05\x03', '\x14\n\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03', '\x03\x05\x03\x1B\n\x03\x03\x03\x03\x03\x03\x03', '\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03\x03', '\x03\x03\x03\x03\x07\x03(\n\x03\f\x03\x0E\x03+\x0B', '\x03\x03\x04\x03\x04\x03\x04\x07\x040\n\x04\f\x04', '\x0E\x043\x0B\x04\x03\x05\x03\x05\x03\x06\x03', '\x06\x03\x06\x02\x03\x04\x07\x02\x04\x06\b\n\x02', '\x03\x03\x02\x06\t\x029\x02\f\x03\x02\x02\x02\x04', '\x1A\x03\x02\x02\x02\x06,\x03\x02\x02\x02\b4\x03', '\x02\x02\x02\n6\x03\x02\x02\x02\f\r\x05\x04\x03', '\x02\r\x0E\x07\x03\x02\x02\x0E\x03\x03\x02\x02', '\x02\x0F\x10\b\x03\x01\x02\x10\x11\x07\r\x02\x02', '\x11\x13\x07\x04\x02\x02\x12\x14\x05\x06\x04\x02', '\x13\x12\x03\x02\x02\x02\x13\x14\x03\x02\x02\x02', '\x14\x15\x03\x02\x02\x02\x15\x1B\x07\x05\x02\x02', '\x16\x17\x07\x04\x02\x02\x17\x18\x05\x04\x03\x02', '\x18\x19\x07\x05\x02\x02\x19\x1B\x03\x02\x02\x02', '\x1A\x0F\x03\x02\x02\x02\x1A\x16\x03\x02\x02\x02', '\x1B)\x03\x02\x02\x02\x1C\x1D\f\x06\x02\x02\x1D', '\x1E\x05\b\x05\x02\x1E\x1F\x05\x04\x03\x07\x1F', '(\x03\x02\x02\x02 !\f\x05\x02\x02!"\x05\n\x06\x02', '"#\x05\x04\x03\x06#(\x03\x02\x02\x02$%\f\x04\x02', '\x02%&\t\x02\x02\x02&(\x05\x04\x03\x05\'\x1C\x03', '\x02\x02\x02\' \x03\x02\x02\x02\'$\x03\x02\x02\x02', '(+\x03\x02\x02\x02)\'\x03\x02\x02\x02)*\x03\x02', '\x02\x02*\x05\x03\x02\x02\x02+)\x03\x02\x02\x02', ',1\x05\x04\x03\x02-.\x07\n\x02\x02.0\x05\x04\x03', '\x02/-\x03\x02\x02\x0203\x03\x02\x02\x021/\x03\x02', '\x02\x0212\x03\x02\x02\x022\x07\x03\x02\x02\x02', '31\x03\x02\x02\x0245\x07\x0B\x02\x025\t\x03\x02', '\x02\x0267\x07\f\x02\x027\x0B\x03\x02\x02\x02\x07', '\x13\x1A\')1'].join("");
 
 var atn = new antlr4.atn.ATNDeserializer().deserialize(serializedATN);
 
@@ -14110,11 +14072,11 @@ var decisionsToDFA = atn.decisionToState.map(function (ds, index) {
 
 var sharedContextCache = new antlr4.PredictionContextCache();
 
-var literalNames = [null, "'<'", "'<='", "'>'", "'>='", "'('", "')'", "','"];
+var literalNames = [null, "'<EOF>'", "'('", "')'", "'<'", "'<='", "'>'", "'>='", "','", "'and'", "'or'"];
 
-var symbolicNames = [null, null, null, null, null, null, null, null, "ID", "AND", "OR", "IS", "NEWLINE", "COMMENT", "WS"];
+var symbolicNames = [null, null, null, null, null, null, null, null, null, null, null, "ID", "COMMENT", "WS"];
 
-var ruleNames = ["prog", "expr"];
+var ruleNames = ["prog", "expr", "exprList", "and", "or"];
 
 function ExprParser(input) {
     antlr4.Parser.call(this, input);
@@ -14142,16 +14104,18 @@ ExprParser.T__3 = 4;
 ExprParser.T__4 = 5;
 ExprParser.T__5 = 6;
 ExprParser.T__6 = 7;
-ExprParser.ID = 8;
-ExprParser.AND = 9;
-ExprParser.OR = 10;
-ExprParser.IS = 11;
-ExprParser.NEWLINE = 12;
-ExprParser.COMMENT = 13;
-ExprParser.WS = 14;
+ExprParser.T__7 = 8;
+ExprParser.T__8 = 9;
+ExprParser.T__9 = 10;
+ExprParser.ID = 11;
+ExprParser.COMMENT = 12;
+ExprParser.WS = 13;
 
 ExprParser.RULE_prog = 0;
 ExprParser.RULE_expr = 1;
+ExprParser.RULE_exprList = 2;
+ExprParser.RULE_and = 3;
+ExprParser.RULE_or = 4;
 
 function ProgContext(parser, parent, invokingState) {
     if (parent === undefined) {
@@ -14173,18 +14137,6 @@ ProgContext.prototype.expr = function () {
     return this.getTypedRuleContext(ExprContext, 0);
 };
 
-ProgContext.prototype.enterRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.enterProg(this);
-    }
-};
-
-ProgContext.prototype.exitRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.exitProg(this);
-    }
-};
-
 ProgContext.prototype.accept = function (visitor) {
     if (visitor instanceof ExprVisitor) {
         return visitor.visitProg(this);
@@ -14201,8 +14153,10 @@ ExprParser.prototype.prog = function () {
     this.enterRule(localctx, 0, ExprParser.RULE_prog);
     try {
         this.enterOuterAlt(localctx, 1);
-        this.state = 4;
+        this.state = 10;
         this.expr(0);
+        this.state = 11;
+        this.match(ExprParser.T__0);
     } catch (re) {
         if (re instanceof antlr4.error.RecognitionException) {
             localctx.exception = re;
@@ -14237,116 +14191,7 @@ ExprContext.prototype.copyFrom = function (ctx) {
     antlr4.ParserRuleContext.prototype.copyFrom.call(this, ctx);
 };
 
-function ParenContext(parser, ctx) {
-    ExprContext.call(this, parser);
-    ExprContext.prototype.copyFrom.call(this, ctx);
-    return this;
-}
-
-ParenContext.prototype = Object.create(ExprContext.prototype);
-ParenContext.prototype.constructor = ParenContext;
-
-ExprParser.ParenContext = ParenContext;
-
-ParenContext.prototype.expr = function () {
-    return this.getTypedRuleContext(ExprContext, 0);
-};
-ParenContext.prototype.enterRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.enterParen(this);
-    }
-};
-
-ParenContext.prototype.exitRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.exitParen(this);
-    }
-};
-
-ParenContext.prototype.accept = function (visitor) {
-    if (visitor instanceof ExprVisitor) {
-        return visitor.visitParen(this);
-    } else {
-        return visitor.visitChildren(this);
-    }
-};
-
-function CompareContext(parser, ctx) {
-    ExprContext.call(this, parser);
-    ExprContext.prototype.copyFrom.call(this, ctx);
-    return this;
-}
-
-CompareContext.prototype = Object.create(ExprContext.prototype);
-CompareContext.prototype.constructor = CompareContext;
-
-ExprParser.CompareContext = CompareContext;
-
-CompareContext.prototype.expr = function (i) {
-    if (i === undefined) {
-        i = null;
-    }
-    if (i === null) {
-        return this.getTypedRuleContexts(ExprContext);
-    } else {
-        return this.getTypedRuleContext(ExprContext, i);
-    }
-};
-CompareContext.prototype.enterRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.enterCompare(this);
-    }
-};
-
-CompareContext.prototype.exitRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.exitCompare(this);
-    }
-};
-
-CompareContext.prototype.accept = function (visitor) {
-    if (visitor instanceof ExprVisitor) {
-        return visitor.visitCompare(this);
-    } else {
-        return visitor.visitChildren(this);
-    }
-};
-
-function BlankContext(parser, ctx) {
-    ExprContext.call(this, parser);
-    ExprContext.prototype.copyFrom.call(this, ctx);
-    return this;
-}
-
-BlankContext.prototype = Object.create(ExprContext.prototype);
-BlankContext.prototype.constructor = BlankContext;
-
-ExprParser.BlankContext = BlankContext;
-
-BlankContext.prototype.NEWLINE = function () {
-    return this.getToken(ExprParser.NEWLINE, 0);
-};
-BlankContext.prototype.enterRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.enterBlank(this);
-    }
-};
-
-BlankContext.prototype.exitRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.exitBlank(this);
-    }
-};
-
-BlankContext.prototype.accept = function (visitor) {
-    if (visitor instanceof ExprVisitor) {
-        return visitor.visitBlank(this);
-    } else {
-        return visitor.visitChildren(this);
-    }
-};
-
-function OrContext(parser, ctx) {
+function AndExContext(parser, ctx) {
     ExprContext.call(this, parser);
     this.left = null; // ExprContext;
     this.right = null; // ExprContext;
@@ -14354,16 +14199,16 @@ function OrContext(parser, ctx) {
     return this;
 }
 
-OrContext.prototype = Object.create(ExprContext.prototype);
-OrContext.prototype.constructor = OrContext;
+AndExContext.prototype = Object.create(ExprContext.prototype);
+AndExContext.prototype.constructor = AndExContext;
 
-ExprParser.OrContext = OrContext;
+ExprParser.AndExContext = AndExContext;
 
-OrContext.prototype.OR = function () {
-    return this.getToken(ExprParser.OR, 0);
+AndExContext.prototype.and = function () {
+    return this.getTypedRuleContext(AndContext, 0);
 };
 
-OrContext.prototype.expr = function (i) {
+AndExContext.prototype.expr = function (i) {
     if (i === undefined) {
         i = null;
     }
@@ -14373,113 +14218,123 @@ OrContext.prototype.expr = function (i) {
         return this.getTypedRuleContext(ExprContext, i);
     }
 };
-OrContext.prototype.enterRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.enterOr(this);
-    }
-};
-
-OrContext.prototype.exitRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.exitOr(this);
-    }
-};
-
-OrContext.prototype.accept = function (visitor) {
+AndExContext.prototype.accept = function (visitor) {
     if (visitor instanceof ExprVisitor) {
-        return visitor.visitOr(this);
+        return visitor.visitAndEx(this);
     } else {
         return visitor.visitChildren(this);
     }
 };
 
-function FuncContext(parser, ctx) {
+function OrExContext(parser, ctx) {
+    ExprContext.call(this, parser);
+    this.left = null; // ExprContext;
+    this.right = null; // ExprContext;
+    ExprContext.prototype.copyFrom.call(this, ctx);
+    return this;
+}
+
+OrExContext.prototype = Object.create(ExprContext.prototype);
+OrExContext.prototype.constructor = OrExContext;
+
+ExprParser.OrExContext = OrExContext;
+
+OrExContext.prototype.or = function () {
+    return this.getTypedRuleContext(OrContext, 0);
+};
+
+OrExContext.prototype.expr = function (i) {
+    if (i === undefined) {
+        i = null;
+    }
+    if (i === null) {
+        return this.getTypedRuleContexts(ExprContext);
+    } else {
+        return this.getTypedRuleContext(ExprContext, i);
+    }
+};
+OrExContext.prototype.accept = function (visitor) {
+    if (visitor instanceof ExprVisitor) {
+        return visitor.visitOrEx(this);
+    } else {
+        return visitor.visitChildren(this);
+    }
+};
+
+function CompareExContext(parser, ctx) {
+    ExprContext.call(this, parser);
+    this.left = null; // ExprContext;
+    this.right = null; // ExprContext;
+    ExprContext.prototype.copyFrom.call(this, ctx);
+    return this;
+}
+
+CompareExContext.prototype = Object.create(ExprContext.prototype);
+CompareExContext.prototype.constructor = CompareExContext;
+
+ExprParser.CompareExContext = CompareExContext;
+
+CompareExContext.prototype.expr = function (i) {
+    if (i === undefined) {
+        i = null;
+    }
+    if (i === null) {
+        return this.getTypedRuleContexts(ExprContext);
+    } else {
+        return this.getTypedRuleContext(ExprContext, i);
+    }
+};
+CompareExContext.prototype.accept = function (visitor) {
+    if (visitor instanceof ExprVisitor) {
+        return visitor.visitCompareEx(this);
+    } else {
+        return visitor.visitChildren(this);
+    }
+};
+
+function FuncExContext(parser, ctx) {
     ExprContext.call(this, parser);
     ExprContext.prototype.copyFrom.call(this, ctx);
     return this;
 }
 
-FuncContext.prototype = Object.create(ExprContext.prototype);
-FuncContext.prototype.constructor = FuncContext;
+FuncExContext.prototype = Object.create(ExprContext.prototype);
+FuncExContext.prototype.constructor = FuncExContext;
 
-ExprParser.FuncContext = FuncContext;
+ExprParser.FuncExContext = FuncExContext;
 
-FuncContext.prototype.ID = function () {
+FuncExContext.prototype.ID = function () {
     return this.getToken(ExprParser.ID, 0);
 };
 
-FuncContext.prototype.expr = function (i) {
-    if (i === undefined) {
-        i = null;
-    }
-    if (i === null) {
-        return this.getTypedRuleContexts(ExprContext);
-    } else {
-        return this.getTypedRuleContext(ExprContext, i);
-    }
+FuncExContext.prototype.exprList = function () {
+    return this.getTypedRuleContext(ExprListContext, 0);
 };
-FuncContext.prototype.enterRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.enterFunc(this);
-    }
-};
-
-FuncContext.prototype.exitRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.exitFunc(this);
-    }
-};
-
-FuncContext.prototype.accept = function (visitor) {
+FuncExContext.prototype.accept = function (visitor) {
     if (visitor instanceof ExprVisitor) {
-        return visitor.visitFunc(this);
+        return visitor.visitFuncEx(this);
     } else {
         return visitor.visitChildren(this);
     }
 };
 
-function AndContext(parser, ctx) {
+function ParenExContext(parser, ctx) {
     ExprContext.call(this, parser);
-    this.left = null; // ExprContext;
-    this.right = null; // ExprContext;
     ExprContext.prototype.copyFrom.call(this, ctx);
     return this;
 }
 
-AndContext.prototype = Object.create(ExprContext.prototype);
-AndContext.prototype.constructor = AndContext;
+ParenExContext.prototype = Object.create(ExprContext.prototype);
+ParenExContext.prototype.constructor = ParenExContext;
 
-ExprParser.AndContext = AndContext;
+ExprParser.ParenExContext = ParenExContext;
 
-AndContext.prototype.AND = function () {
-    return this.getToken(ExprParser.AND, 0);
+ParenExContext.prototype.expr = function () {
+    return this.getTypedRuleContext(ExprContext, 0);
 };
-
-AndContext.prototype.expr = function (i) {
-    if (i === undefined) {
-        i = null;
-    }
-    if (i === null) {
-        return this.getTypedRuleContexts(ExprContext);
-    } else {
-        return this.getTypedRuleContext(ExprContext, i);
-    }
-};
-AndContext.prototype.enterRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.enterAnd(this);
-    }
-};
-
-AndContext.prototype.exitRule = function (listener) {
-    if (listener instanceof ExprListener) {
-        listener.exitAnd(this);
-    }
-};
-
-AndContext.prototype.accept = function (visitor) {
+ParenExContext.prototype.accept = function (visitor) {
     if (visitor instanceof ExprVisitor) {
-        return visitor.visitAnd(this);
+        return visitor.visitParenEx(this);
     } else {
         return visitor.visitChildren(this);
     }
@@ -14498,128 +14353,110 @@ ExprParser.prototype.expr = function (_p) {
     var _la = 0; // Token type
     try {
         this.enterOuterAlt(localctx, 1);
-        this.state = 25;
+        this.state = 24;
         this._errHandler.sync(this);
         switch (this._input.LA(1)) {
-            case ExprParser.T__4:
-                localctx = new ParenContext(this, localctx);
+            case ExprParser.ID:
+                localctx = new FuncExContext(this, localctx);
                 this._ctx = localctx;
                 _prevctx = localctx;
 
-                this.state = 7;
-                this.match(ExprParser.T__4);
-                this.state = 8;
-                this.expr(0);
-                this.state = 9;
-                this.match(ExprParser.T__5);
-                break;
-            case ExprParser.ID:
-                localctx = new FuncContext(this, localctx);
-                this._ctx = localctx;
-                _prevctx = localctx;
-                this.state = 11;
+                this.state = 14;
                 this.match(ExprParser.ID);
-                this.state = 12;
-                this.match(ExprParser.T__4);
-                this.state = 21;
+                this.state = 15;
+                this.match(ExprParser.T__1);
+                this.state = 17;
                 this._errHandler.sync(this);
                 _la = this._input.LA(1);
-                if ((_la & ~0x1f) == 0 && (1 << _la & (1 << ExprParser.T__4 | 1 << ExprParser.ID | 1 << ExprParser.NEWLINE)) !== 0) {
-                    this.state = 13;
-                    this.expr(0);
-                    this.state = 18;
-                    this._errHandler.sync(this);
-                    _la = this._input.LA(1);
-                    while (_la === ExprParser.T__6) {
-                        this.state = 14;
-                        this.match(ExprParser.T__6);
-                        this.state = 15;
-                        this.expr(0);
-                        this.state = 20;
-                        this._errHandler.sync(this);
-                        _la = this._input.LA(1);
-                    }
+                if (_la === ExprParser.T__1 || _la === ExprParser.ID) {
+                    this.state = 16;
+                    this.exprList();
                 }
 
-                this.state = 23;
-                this.match(ExprParser.T__5);
+                this.state = 19;
+                this.match(ExprParser.T__2);
                 break;
-            case ExprParser.NEWLINE:
-                localctx = new BlankContext(this, localctx);
+            case ExprParser.T__1:
+                localctx = new ParenExContext(this, localctx);
                 this._ctx = localctx;
                 _prevctx = localctx;
-                this.state = 24;
-                this.match(ExprParser.NEWLINE);
+                this.state = 20;
+                this.match(ExprParser.T__1);
+                this.state = 21;
+                this.expr(0);
+                this.state = 22;
+                this.match(ExprParser.T__2);
                 break;
             default:
                 throw new antlr4.error.NoViableAltException(this);
         }
         this._ctx.stop = this._input.LT(-1);
-        this.state = 38;
+        this.state = 39;
         this._errHandler.sync(this);
-        var _alt = this._interp.adaptivePredict(this._input, 4, this._ctx);
+        var _alt = this._interp.adaptivePredict(this._input, 3, this._ctx);
         while (_alt != 2 && _alt != antlr4.atn.ATN.INVALID_ALT_NUMBER) {
             if (_alt === 1) {
                 if (this._parseListeners !== null) {
                     this.triggerExitRuleEvent();
                 }
                 _prevctx = localctx;
-                this.state = 36;
+                this.state = 37;
                 this._errHandler.sync(this);
-                var la_ = this._interp.adaptivePredict(this._input, 3, this._ctx);
+                var la_ = this._interp.adaptivePredict(this._input, 2, this._ctx);
                 switch (la_) {
                     case 1:
-                        localctx = new AndContext(this, new ExprContext(this, _parentctx, _parentState));
+                        localctx = new AndExContext(this, new ExprContext(this, _parentctx, _parentState));
                         localctx.left = _prevctx;
                         this.pushNewRecursionContext(localctx, _startState, ExprParser.RULE_expr);
-                        this.state = 27;
-                        if (!this.precpred(this._ctx, 6)) {
-                            throw new antlr4.error.FailedPredicateException(this, "this.precpred(this._ctx, 6)");
-                        }
-                        this.state = 28;
-                        this.match(ExprParser.AND);
-                        this.state = 29;
-                        localctx.right = this.expr(7);
-                        break;
-
-                    case 2:
-                        localctx = new OrContext(this, new ExprContext(this, _parentctx, _parentState));
-                        localctx.left = _prevctx;
-                        this.pushNewRecursionContext(localctx, _startState, ExprParser.RULE_expr);
-                        this.state = 30;
-                        if (!this.precpred(this._ctx, 5)) {
-                            throw new antlr4.error.FailedPredicateException(this, "this.precpred(this._ctx, 5)");
-                        }
-                        this.state = 31;
-                        this.match(ExprParser.OR);
-                        this.state = 32;
-                        localctx.right = this.expr(6);
-                        break;
-
-                    case 3:
-                        localctx = new CompareContext(this, new ExprContext(this, _parentctx, _parentState));
-                        this.pushNewRecursionContext(localctx, _startState, ExprParser.RULE_expr);
-                        this.state = 33;
+                        this.state = 26;
                         if (!this.precpred(this._ctx, 4)) {
                             throw new antlr4.error.FailedPredicateException(this, "this.precpred(this._ctx, 4)");
                         }
+                        this.state = 27;
+                        this.and();
+                        this.state = 28;
+                        localctx.right = this.expr(5);
+                        break;
+
+                    case 2:
+                        localctx = new OrExContext(this, new ExprContext(this, _parentctx, _parentState));
+                        localctx.left = _prevctx;
+                        this.pushNewRecursionContext(localctx, _startState, ExprParser.RULE_expr);
+                        this.state = 30;
+                        if (!this.precpred(this._ctx, 3)) {
+                            throw new antlr4.error.FailedPredicateException(this, "this.precpred(this._ctx, 3)");
+                        }
+                        this.state = 31;
+                        this.or();
+                        this.state = 32;
+                        localctx.right = this.expr(4);
+                        break;
+
+                    case 3:
+                        localctx = new CompareExContext(this, new ExprContext(this, _parentctx, _parentState));
+                        localctx.left = _prevctx;
+                        this.pushNewRecursionContext(localctx, _startState, ExprParser.RULE_expr);
                         this.state = 34;
+                        if (!this.precpred(this._ctx, 2)) {
+                            throw new antlr4.error.FailedPredicateException(this, "this.precpred(this._ctx, 2)");
+                        }
+                        this.state = 35;
                         _la = this._input.LA(1);
-                        if (!((_la & ~0x1f) == 0 && (1 << _la & (1 << ExprParser.T__0 | 1 << ExprParser.T__1 | 1 << ExprParser.T__2 | 1 << ExprParser.T__3)) !== 0)) {
+                        if (!((_la & ~0x1f) == 0 && (1 << _la & (1 << ExprParser.T__3 | 1 << ExprParser.T__4 | 1 << ExprParser.T__5 | 1 << ExprParser.T__6)) !== 0)) {
                             this._errHandler.recoverInline(this);
                         } else {
                             this._errHandler.reportMatch(this);
                             this.consume();
                         }
-                        this.state = 35;
-                        this.expr(5);
+                        this.state = 36;
+                        localctx.right = this.expr(3);
                         break;
 
                 }
             }
-            this.state = 40;
+            this.state = 41;
             this._errHandler.sync(this);
-            _alt = this._interp.adaptivePredict(this._input, 4, this._ctx);
+            _alt = this._interp.adaptivePredict(this._input, 3, this._ctx);
         }
     } catch (error) {
         if (error instanceof antlr4.error.RecognitionException) {
@@ -14631,6 +14468,174 @@ ExprParser.prototype.expr = function (_p) {
         }
     } finally {
         this.unrollRecursionContexts(_parentctx);
+    }
+    return localctx;
+};
+
+function ExprListContext(parser, parent, invokingState) {
+    if (parent === undefined) {
+        parent = null;
+    }
+    if (invokingState === undefined || invokingState === null) {
+        invokingState = -1;
+    }
+    antlr4.ParserRuleContext.call(this, parent, invokingState);
+    this.parser = parser;
+    this.ruleIndex = ExprParser.RULE_exprList;
+    return this;
+}
+
+ExprListContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
+ExprListContext.prototype.constructor = ExprListContext;
+
+ExprListContext.prototype.expr = function (i) {
+    if (i === undefined) {
+        i = null;
+    }
+    if (i === null) {
+        return this.getTypedRuleContexts(ExprContext);
+    } else {
+        return this.getTypedRuleContext(ExprContext, i);
+    }
+};
+
+ExprListContext.prototype.accept = function (visitor) {
+    if (visitor instanceof ExprVisitor) {
+        return visitor.visitExprList(this);
+    } else {
+        return visitor.visitChildren(this);
+    }
+};
+
+ExprParser.ExprListContext = ExprListContext;
+
+ExprParser.prototype.exprList = function () {
+
+    var localctx = new ExprListContext(this, this._ctx, this.state);
+    this.enterRule(localctx, 4, ExprParser.RULE_exprList);
+    var _la = 0; // Token type
+    try {
+        this.enterOuterAlt(localctx, 1);
+        this.state = 42;
+        this.expr(0);
+        this.state = 47;
+        this._errHandler.sync(this);
+        _la = this._input.LA(1);
+        while (_la === ExprParser.T__7) {
+            this.state = 43;
+            this.match(ExprParser.T__7);
+            this.state = 44;
+            this.expr(0);
+            this.state = 49;
+            this._errHandler.sync(this);
+            _la = this._input.LA(1);
+        }
+    } catch (re) {
+        if (re instanceof antlr4.error.RecognitionException) {
+            localctx.exception = re;
+            this._errHandler.reportError(this, re);
+            this._errHandler.recover(this, re);
+        } else {
+            throw re;
+        }
+    } finally {
+        this.exitRule();
+    }
+    return localctx;
+};
+
+function AndContext(parser, parent, invokingState) {
+    if (parent === undefined) {
+        parent = null;
+    }
+    if (invokingState === undefined || invokingState === null) {
+        invokingState = -1;
+    }
+    antlr4.ParserRuleContext.call(this, parent, invokingState);
+    this.parser = parser;
+    this.ruleIndex = ExprParser.RULE_and;
+    return this;
+}
+
+AndContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
+AndContext.prototype.constructor = AndContext;
+
+AndContext.prototype.accept = function (visitor) {
+    if (visitor instanceof ExprVisitor) {
+        return visitor.visitAnd(this);
+    } else {
+        return visitor.visitChildren(this);
+    }
+};
+
+ExprParser.AndContext = AndContext;
+
+ExprParser.prototype.and = function () {
+
+    var localctx = new AndContext(this, this._ctx, this.state);
+    this.enterRule(localctx, 6, ExprParser.RULE_and);
+    try {
+        this.enterOuterAlt(localctx, 1);
+        this.state = 50;
+        this.match(ExprParser.T__8);
+    } catch (re) {
+        if (re instanceof antlr4.error.RecognitionException) {
+            localctx.exception = re;
+            this._errHandler.reportError(this, re);
+            this._errHandler.recover(this, re);
+        } else {
+            throw re;
+        }
+    } finally {
+        this.exitRule();
+    }
+    return localctx;
+};
+
+function OrContext(parser, parent, invokingState) {
+    if (parent === undefined) {
+        parent = null;
+    }
+    if (invokingState === undefined || invokingState === null) {
+        invokingState = -1;
+    }
+    antlr4.ParserRuleContext.call(this, parent, invokingState);
+    this.parser = parser;
+    this.ruleIndex = ExprParser.RULE_or;
+    return this;
+}
+
+OrContext.prototype = Object.create(antlr4.ParserRuleContext.prototype);
+OrContext.prototype.constructor = OrContext;
+
+OrContext.prototype.accept = function (visitor) {
+    if (visitor instanceof ExprVisitor) {
+        return visitor.visitOr(this);
+    } else {
+        return visitor.visitChildren(this);
+    }
+};
+
+ExprParser.OrContext = OrContext;
+
+ExprParser.prototype.or = function () {
+
+    var localctx = new OrContext(this, this._ctx, this.state);
+    this.enterRule(localctx, 8, ExprParser.RULE_or);
+    try {
+        this.enterOuterAlt(localctx, 1);
+        this.state = 52;
+        this.match(ExprParser.T__9);
+    } catch (re) {
+        if (re instanceof antlr4.error.RecognitionException) {
+            localctx.exception = re;
+            this._errHandler.reportError(this, re);
+            this._errHandler.recover(this, re);
+        } else {
+            throw re;
+        }
+    } finally {
+        this.exitRule();
     }
     return localctx;
 };
@@ -14647,11 +14652,11 @@ ExprParser.prototype.sempred = function (localctx, ruleIndex, predIndex) {
 ExprParser.prototype.expr_sempred = function (localctx, predIndex) {
     switch (predIndex) {
         case 0:
-            return this.precpred(this._ctx, 6);
-        case 1:
-            return this.precpred(this._ctx, 5);
-        case 2:
             return this.precpred(this._ctx, 4);
+        case 1:
+            return this.precpred(this._ctx, 3);
+        case 2:
+            return this.precpred(this._ctx, 2);
         default:
             throw "No predicate with index:" + predIndex;
     }
@@ -14660,7 +14665,7 @@ ExprParser.prototype.expr_sempred = function (localctx, predIndex) {
 exports.ExprParser = ExprParser;
 
 /***/ }),
-/* 71 */
+/* 70 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -14668,7 +14673,7 @@ exports.ExprParser = ExprParser;
 
 // Generated from lib/Expr.g4 by ANTLR 4.7
 // jshint ignore: start
-var antlr4 = __webpack_require__(17);
+var antlr4 = __webpack_require__(18);
 
 // This class defines a complete generic visitor for a parse tree produced by ExprParser.
 
@@ -14685,33 +14690,43 @@ ExprVisitor.prototype.visitProg = function (ctx) {
   return this.visitChildren(ctx);
 };
 
-// Visit a parse tree produced by ExprParser#paren.
-ExprVisitor.prototype.visitParen = function (ctx) {
+// Visit a parse tree produced by ExprParser#andEx.
+ExprVisitor.prototype.visitAndEx = function (ctx) {
   return this.visitChildren(ctx);
 };
 
-// Visit a parse tree produced by ExprParser#compare.
-ExprVisitor.prototype.visitCompare = function (ctx) {
+// Visit a parse tree produced by ExprParser#orEx.
+ExprVisitor.prototype.visitOrEx = function (ctx) {
   return this.visitChildren(ctx);
 };
 
-// Visit a parse tree produced by ExprParser#blank.
-ExprVisitor.prototype.visitBlank = function (ctx) {
+// Visit a parse tree produced by ExprParser#compareEx.
+ExprVisitor.prototype.visitCompareEx = function (ctx) {
   return this.visitChildren(ctx);
 };
 
-// Visit a parse tree produced by ExprParser#or.
-ExprVisitor.prototype.visitOr = function (ctx) {
+// Visit a parse tree produced by ExprParser#funcEx.
+ExprVisitor.prototype.visitFuncEx = function (ctx) {
   return this.visitChildren(ctx);
 };
 
-// Visit a parse tree produced by ExprParser#func.
-ExprVisitor.prototype.visitFunc = function (ctx) {
+// Visit a parse tree produced by ExprParser#parenEx.
+ExprVisitor.prototype.visitParenEx = function (ctx) {
+  return this.visitChildren(ctx);
+};
+
+// Visit a parse tree produced by ExprParser#exprList.
+ExprVisitor.prototype.visitExprList = function (ctx) {
   return this.visitChildren(ctx);
 };
 
 // Visit a parse tree produced by ExprParser#and.
 ExprVisitor.prototype.visitAnd = function (ctx) {
+  return this.visitChildren(ctx);
+};
+
+// Visit a parse tree produced by ExprParser#or.
+ExprVisitor.prototype.visitOr = function (ctx) {
   return this.visitChildren(ctx);
 };
 
