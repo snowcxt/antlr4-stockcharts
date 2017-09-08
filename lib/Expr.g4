@@ -16,5 +16,5 @@ and : 'and';
 or : 'or';
 
 ID : [a-zA-Z_] [a-zA-Z_0-9]*;
-COMMENT : ( '//' ~[\r\n]* '\r'? '\n' | '/*' .*? '*/') -> skip;
+COMMENT : ( '--' ~[\r\n]* '\r'? '\n' | '/*' .*? '*/') -> skip;
 WS      : [ \t\r\n]+ -> skip;

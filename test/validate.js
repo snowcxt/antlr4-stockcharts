@@ -24,9 +24,9 @@ describe("validation", function () {
     });
 
     it("comment", function () {
-        assert.deepEqual(validate(`// some comments
+        assert.deepEqual(validate(`-- some comments
         /*
-            mutiple line coment
+            mutiple line comments
         */
         abc()`
         ), []);
