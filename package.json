@@ -1,0 +1,20 @@
+{
+  "name": "antlr4-stockcharts",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "antlr": "java -jar antlr-4.7-complete.jar -visitor -no-listener -Dlanguage=JavaScript lib/Expr.g4 -o lib/parser",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/snowcxt/antlr4-stockcharts.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/snowcxt/antlr4-stockcharts/issues"
+  },
+  "homepage": "https://github.com/snowcxt/antlr4-stockcharts#readme"
+}
