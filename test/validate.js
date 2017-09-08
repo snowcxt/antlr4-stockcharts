@@ -22,4 +22,13 @@ describe("validation", function () {
             "text": "extraneous input ')' expecting '<EOF>'"
         }]);
     });
+
+    it("comment", function () {
+        assert.deepEqual(validate(`// some comments
+        /*
+            mutiple line coment
+        */
+        abc()`
+        ), []);
+    });
 });
